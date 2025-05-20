@@ -1,0 +1,13 @@
+{
+  "name": "hammadgenie-root",
+  "version": "1.0.0",
+  "description": "HammadGenie AI Chatbot",
+  "scripts": {
+    "dev": "netlify dev",
+    "start": "netlify dev",
+    "build": "netlify build"
+  },
+  "devDependencies": {
+    "netlify-cli": "^15.0.0"
+  }
+}

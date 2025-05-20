@@ -1,0 +1,35 @@
+[build]
+  publish = "."
+  functions = "netlify/functions"
+
+[dev]
+  framework = "#static"
+  port = 9999
+  publish = "."
+  functions = "netlify/functions"
+  autoLaunch = true
+
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
+
+[[redirects]]
+  from = "/api/*"
+  to = "/.netlify/functions/:splat"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
+
+[[redirects]]
+  from = "/api/*"
+  to = "/.netlify/functions/:splat"
+  status = 200
+  force = true
+
+[functions]
+  node_bundler = "esbuild"

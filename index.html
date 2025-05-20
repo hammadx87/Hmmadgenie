@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>HammadGenie AI Chatbot</title>
+  <!-- PWA Support -->
+  <link rel="manifest" href="/manifest.json">
+  <meta name="theme-color" content="#1d7efd">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <link rel="apple-touch-icon" href="/logo.jpeg">
+  <!-- Google Fonts for Icons -->
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@32,400,0,0">
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <div class="container">
+    <!-- App Header -->
+    <header class="app-header">
+      <div class="header-content">
+        <div class="logo-container">
+          <img src="/logo.jpeg" alt="HammadGenie Logo" class="logo">
+        </div>
+        <div class="text-container">
+          <h1 class="heading"><span>Hello, I'm </span>HammadGenie</h1>
+          <h4 class="sub-heading">How can I help you today?</h4>
+        </div>
+        <div class="header-controls">
+          <button id="theme-toggle-btn" class="material-symbols-rounded">light_mode</button>
+        </div>
+      </div>
+    </header>
+
+    <!-- Suggestions List -->
+    <ul class="suggestions">
+      <li class="suggestions-item">
+        <p class="text">Explain the concept of machine learning in simple terms.</p>
+        <span class="icon material-symbols-rounded">lightbulb</span>
+      </li>
+      <li class="suggestions-item">
+        <p class="text">Write a short poem about technology and nature.</p>
+        <span class="icon material-symbols-rounded">draw</span>
+      </li>
+      <li class="suggestions-item">
+        <p class="text">What are the best practices for responsive web design?</p>
+        <span class="icon material-symbols-rounded">explore</span>
+      </li>
+      <li class="suggestions-item">
+        <p class="text">Create a simple JavaScript function to sort an array.</p>
+        <span class="icon material-symbols-rounded">code_blocks</span>
+      </li>
+    </ul>
+
+    <!-- Chats -->
+    <div class="chats-container"></div>
+
+    <!-- Prompt Input -->
+    <div class="prompt-container">
+      <div class="prompt-wrapper">
+        <form action="#" class="prompt-form">
+          <input type="text" placeholder="Ask HammadGenie" class="prompt-input" required>
+          <div class="prompt-actions">
+            <!-- Simple Attachment Button -->
+            <button id="attachment-btn" type="button" class="material-symbols-rounded">attach_file</button>
+            <input id="file-input" type="file" accept="image/*, .pdf, .txt, .csv" hidden>
+
+            <!-- Voice Input Button -->
+            <button id="voice-input-btn" type="button" class="material-symbols-rounded">mic</button>
+
+            <!-- Send Prompt and Stop Response Buttons -->
+            <button id="stop-response-btn" type="button" class="material-symbols-rounded">stop_circle</button>
+            <button id="send-prompt-btn" class="material-symbols-rounded">arrow_upward</button>
+          </div>
+        </form>
+
+        <!-- Delete Chats Button -->
+        <button id="delete-chats-btn" class="material-symbols-rounded">delete</button>
+      </div>
+
+      <p class="disclaimer-text">HammadGenie can make mistakes, so double-check its responses.</p>
+    </div>
+  </div>
+
+  <script src="/script.js"></script>
+</body>
+</html>
