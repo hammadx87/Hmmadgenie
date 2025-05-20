@@ -954,25 +954,13 @@ if (isMobile) {
     });
   });
 
-  // Prevent zoom on input focus for iOS
-  const metaViewport = document.querySelector('meta[name=viewport]');
-  if (metaViewport) {
-    metaViewport.content = "width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no";
-  }
-
-  // Additional fix for iOS zoom issues
+  // Handle input focus for better mobile experience
   const promptInput = document.querySelector('.prompt-input');
   if (promptInput) {
-    // Prevent zoom on focus
+    // Improve focus behavior
     promptInput.addEventListener('focus', function() {
       // Add a small delay to ensure the viewport change takes effect
       setTimeout(function() {
-        // Force the viewport to stay at 1.0 scale
-        document.body.style.zoom = 1.0;
-
-        // For iOS Safari
-        document.documentElement.style.webkitTextSizeAdjust = '100%';
-
         // Scroll to make sure header is visible
         const header = document.querySelector('.app-header');
         if (header) {
@@ -1040,15 +1028,11 @@ if (isMobile) {
   // Initialize keyboard handling
   handleKeyboardVisibility();
 
-  // Prevent zoom on double tap for iOS
-  let lastTapTime = 0;
-  document.addEventListener('touchend', (e) => {
-    const currentTime = new Date().getTime();
-    const tapLength = currentTime - lastTapTime;
-
-    if (tapLength < 500 && tapLength > 0) {
-      e.preventDefault();
+  // Improved touch handling for mobile devices
+  document.addEventListener('touchstart', (e) => {
+    if (e.target.tagName !== 'INPUT' && e.target.tagName !== 'TEXTAREA') {
+      // Allow normal touch behavior for non-input elements
+      return true;
     }
-    lastTapTime = currentTime;
   });
 }

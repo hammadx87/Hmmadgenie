@@ -927,6 +927,12 @@ body.recording #voice-input-btn {
 
 /* Responsive media query code for mobile phones */
 @media (max-width: 480px) {
+  /* Apply a base font size reduction for all mobile devices */
+  html {
+    font-size: 14px; /* Reduced from default 16px */
+  }
+
+  /* Adjust container padding */
   .container {
     padding: 15px 0 90px;
   }
@@ -955,11 +961,11 @@ body.recording #voice-input-btn {
   }
 
   .app-header .heading {
-    font-size: 1.5rem;
+    font-size: 1.4rem; /* Slightly reduced */
   }
 
   .app-header .sub-heading {
-    font-size: 1.2rem;
+    font-size: 1.1rem; /* Slightly reduced */
   }
 
   body.chats-active .app-header {
@@ -972,7 +978,7 @@ body.recording #voice-input-btn {
   }
 
   body.chats-active .app-header .heading {
-    font-size: 1.3rem;
+    font-size: 1.2rem; /* Slightly reduced */
   }
 
   .container .suggestions {
@@ -988,7 +994,7 @@ body.recording #voice-input-btn {
   }
 
   .suggestions .suggestions-item .text {
-    font-size: 0.95rem;
+    font-size: 0.9rem; /* Slightly reduced */
   }
 
   .suggestions .suggestions-item .icon {
@@ -1012,8 +1018,32 @@ body.recording #voice-input-btn {
 
   .chats-container .message .message-text {
     padding: 8px 12px;
-    font-size: 0.95rem;
+    font-size: 0.9rem; /* Slightly reduced */
     line-height: 1.5;
+  }
+
+  /* Adjust code blocks for better mobile display */
+  .code-container {
+    margin: 10px 0;
+  }
+
+  .code-block {
+    font-size: 0.85rem; /* Smaller font for code */
+    line-height: 1.4;
+    padding: 8px;
+  }
+
+  .code-header {
+    padding: 6px 8px;
+  }
+
+  .code-language {
+    font-size: 0.8rem;
+  }
+
+  .copy-button {
+    font-size: 0.8rem;
+    padding: 3px 6px;
   }
 
   .chats-container .user-message .message-text {
@@ -1027,7 +1057,7 @@ body.recording #voice-input-btn {
 
   /* Improve speech button for touch */
   .speech-btn {
-    font-size: 1.3rem;
+    font-size: 1.2rem; /* Slightly reduced */
     padding: 5px;
     margin-left: 5px;
   }
@@ -1059,7 +1089,7 @@ body.recording #voice-input-btn {
   }
 
   .prompt-form .prompt-input {
-    font-size: 1rem;
+    font-size: 0.95rem; /* Slightly reduced */
     padding-left: 15px;
   }
 
@@ -1073,7 +1103,7 @@ body.recording #voice-input-btn {
   #attachment-btn {
     width: 42px;
     height: 42px;
-    font-size: 1.3rem;
+    font-size: 1.2rem; /* Slightly reduced */
   }
 
   /* Improve send button */
@@ -1086,7 +1116,7 @@ body.recording #voice-input-btn {
   }
 
   .prompt-container .disclaimer-text {
-    font-size: 0.8rem;
+    font-size: 0.75rem; /* Slightly reduced */
     padding: 12px 15px 0;
   }
 
@@ -1096,11 +1126,11 @@ body.recording #voice-input-btn {
   }
 
   .api-key-container h2 {
-    font-size: 1.3rem;
+    font-size: 1.2rem; /* Slightly reduced */
   }
 
   .api-key-container p, .api-key-container li {
-    font-size: 0.9rem;
+    font-size: 0.85rem; /* Slightly reduced */
   }
 
   .api-key-container ol {
@@ -1108,7 +1138,22 @@ body.recording #voice-input-btn {
   }
 
   .developer-credit {
+    font-size: 0.8rem; /* Slightly reduced */
+  }
+}
+
+/* Extra small devices (phones under 375px) */
+@media (max-width: 375px) {
+  html {
+    font-size: 13px; /* Further reduced for very small screens */
+  }
+
+  .chats-container .message .message-text {
     font-size: 0.85rem;
+  }
+
+  .code-block {
+    font-size: 0.8rem;
   }
 }
 
