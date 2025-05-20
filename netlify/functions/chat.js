@@ -61,9 +61,7 @@ exports.handler = async function(event, context) {
         headers,
         body: JSON.stringify({ error: { message: 'Server configuration error' } })
       };
-    }
-
-    console.log('Making request to Gemini API...');
+    }    console.log('Making request to Gemini API...', new Date().toISOString());
     
     // Format the request data according to Gemini API requirements
     const requestData = {
@@ -71,8 +69,14 @@ exports.handler = async function(event, context) {
         parts: [{
           text: requestBody.contents[requestBody.contents.length - 1].parts[0].text
         }]
-      }]
-    };    // Make request to Gemini API with API key in URL
+      }],
+      safetySettings: [
+        {
+          category: "HARM_CATEGORY_DANGEROUS",
+          threshold: "BLOCK_MEDIUM_AND_ABOVE"
+        }
+      ]
+    };// Make request to Gemini API with API key in URL
     const response = await fetch(
       `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${process.env.GEMINI_API_KEY}`,
       {
