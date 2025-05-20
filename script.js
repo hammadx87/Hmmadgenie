@@ -225,15 +225,19 @@ const formatCodeBlocks = (text, textElement, botMsgDiv) => {
   textElement.textContent = "";
   botMsgDiv.classList.remove("loading");
 
+  // More robust regex to match code blocks with potential whitespace around backticks
+  const codeBlockRegex = /(\s*```[\s\S]*?```\s*)/g;
+
   // Split the text by code blocks
-  const parts = text.split(/(```[\s\S]*?```)/g);
+  const parts = text.split(codeBlockRegex).filter(part => part !== '');
 
   for (let i = 0; i < parts.length; i++) {
-    const part = parts[i];
+    const part = parts[i].trim();
 
-    if (part.startsWith("```") && part.endsWith("```")) {
-      // This is a code block
-      const codeContent = part.slice(3, -3).trim();
+    // Check if this part contains a code block (more robust check)
+    if (part.match(/^\s*```[\s\S]*?```\s*$/)) {
+      // Extract the content between the backticks, trimming any whitespace
+      const codeContent = part.replace(/^\s*```/, '').replace(/```\s*$/, '').trim();
       const firstLineBreak = codeContent.indexOf('\n');
 
       // Check if there's a language specified
@@ -244,7 +248,7 @@ const formatCodeBlocks = (text, textElement, botMsgDiv) => {
         const possibleLang = codeContent.slice(0, firstLineBreak).trim();
         if (possibleLang && !possibleLang.includes(' ')) {
           language = possibleLang;
-          code = codeContent.slice(firstLineBreak + 1);
+          code = codeContent.slice(firstLineBreak + 1).trim();
         }
       }
 
@@ -493,12 +497,9 @@ const generateResponse = async (botMsgDiv) => {
     // Process the response text and display with typing effect
     const responseText = data.candidates[0].content.parts[0].text.replace(/\*\*([^\*]+)\*\*/g, "$1").trim();
 
-    // Check if the response contains code blocks and format them
-    if (responseText.includes("```")) {
-      formatCodeBlocks(responseText, textElement, botMsgDiv);
-    } else {
-      typingEffect(responseText, textElement, botMsgDiv);
-    }
+    // Always use formatCodeBlocks for all responses
+    // This ensures code blocks are always detected and rendered properly
+    formatCodeBlocks(responseText, textElement, botMsgDiv);
 
     chatHistory.push({ role: "model", parts: [{ text: responseText }] });
   } catch (error) {
