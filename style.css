@@ -368,84 +368,105 @@ body.keyboard-open .container .prompt-container {
 .code-container {
   position: relative;
   margin: 10px 0;
-  border-radius: 6px;
+  border-radius: 0;
   overflow: hidden;
-  background: #101623;
-  border: 1px solid #1e293b;
+  background: #1e1e1e;
+  font-family: Consolas, Monaco, 'Andale Mono', 'Ubuntu Mono', monospace;
 }
 
 .code-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 8px 16px;
-  background: #1e293b;
-  border-bottom: 1px solid #2d3748;
+  padding: 8px 12px;
+  background: #1e1e1e;
+  border-bottom: none;
 }
 
 .code-language {
-  color: #4CAFF0;
-  font-family: Consolas, Monaco, monospace;
-  font-size: 14px;
+  color: #858585;
+  font-size: 13px;
+  font-family: Consolas, Monaco, 'Andale Mono', 'Ubuntu Mono', monospace;
 }
 
 .copy-button {
   background: transparent;
   border: none;
-  color: #edf3ff;
+  color: #cccccc;
   cursor: pointer;
-  font-size: 14px;
+  font-size: 13px;
   display: flex;
   align-items: center;
-  padding: 4px 8px;
+  gap: 4px;
+  padding: 4px;
   border-radius: 4px;
   transition: background-color 0.2s;
 }
 
 .copy-button:hover {
-  background-color: #2d3748;
+  background-color: rgba(255, 255, 255, 0.1);
 }
 
 .copy-button .material-symbols-rounded {
   font-size: 16px;
-  margin-right: 4px;
-}
-
-/* Style for the check icon */
-.copy-button span.check-icon {
-  color: #4CAFF0;
 }
 
 .code-block {
-  padding: 12px 16px;
-  background: #101623;
-  font-family: Consolas, Monaco, monospace;
+  padding: 0 16px 16px;
+  background: #1e1e1e;
+  font-family: Consolas, Monaco, 'Andale Mono', 'Ubuntu Mono', monospace;
   font-size: 14px;
   line-height: 1.5;
-  color: #edf3ff;
+  color: #d4d4d4;
   white-space: pre;
   overflow-x: auto;
   margin: 0;
-  border-left: 2px solid #4CAFF0;
 }
 
-/* Syntax highlighting */
-.code-keyword, .code-tag, .code-selector, .code-property {
-  color: #4CAFF0;
+/* Syntax highlighting - VS Code dark theme colors */
+.code-keyword {
+  color: #569cd6; /* blue */
+}
+
+.code-tag {
+  color: #569cd6; /* blue */
+}
+
+.code-selector {
+  color: #d7ba7d; /* gold */
+}
+
+.code-property {
+  color: #9cdcfe; /* light blue */
 }
 
 .code-string, .code-value {
-  color: #edf3ff;
+  color: #ce9178; /* orange/brown */
 }
 
 .code-comment {
-  color: #6a7891;
+  color: #6a9955; /* green */
+}
+
+/* HTML specific colors */
+.code-doctype {
+  color: #808080; /* gray */
 }
 
 /* Light theme adjustments for code blocks */
+body.light-theme .code-container,
+body.light-theme .code-header,
 body.light-theme .code-block {
-  background: #1e293b;
-  color: #edf3ff;
+  background: #f5f5f5;
+  color: #333;
+}
+
+body.light-theme .code-language {
+  color: #666;
+}
+
+body.light-theme .copy-button {
+  color: #333;
 }
 
 .chats-container .bot-message {

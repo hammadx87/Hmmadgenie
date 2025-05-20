@@ -259,7 +259,7 @@ const formatCodeBlocks = (text, textElement, botMsgDiv) => {
       // Add language indicator
       const langIndicator = document.createElement('div');
       langIndicator.className = 'code-language';
-      langIndicator.textContent = `~${language}`;
+      langIndicator.textContent = language;
       codeHeader.appendChild(langIndicator);
 
       // Add copy button with simpler implementation
@@ -276,7 +276,7 @@ const formatCodeBlocks = (text, textElement, botMsgDiv) => {
         document.body.removeChild(textarea);
 
         // Show copied state
-        copyButton.innerHTML = '<span class="material-symbols-rounded check-icon">check</span> Copied!';
+        copyButton.innerHTML = '<span class="material-symbols-rounded">check</span> Copied';
 
         // Reset after 2 seconds
         setTimeout(() => {
@@ -327,13 +327,18 @@ const formatCodeBlocks = (text, textElement, botMsgDiv) => {
 
 // Custom syntax highlighter for HTML
 function highlightHTML(code) {
+  // Replace DOCTYPE
+  code = code.replace(/(&lt;|<)(!DOCTYPE\s+html)(&gt;|>)/gi, function(_, open, doctype, close) {
+    return `${open}<span class="code-doctype">${doctype}</span>${close}`;
+  });
+
   // Replace HTML tags
-  code = code.replace(/(&lt;|<)(\/?)([\w\-]+)(.*?)(&gt;|>)/g, function(match, open, slash, tag, attrs, close) {
+  code = code.replace(/(&lt;|<)(\/?)([\w\-]+)(.*?)(&gt;|>)/g, function(_, open, slash, tag, attrs, close) {
     return `${open}<span class="code-tag">${slash}${tag}</span>${attrs}${close}`;
   });
 
   // Replace attributes
-  code = code.replace(/(\s+)([\w\-]+)(\s*=\s*)("[^"]*"|'[^']*')/g, function(match, space, attr, equals, value) {
+  code = code.replace(/(\s+)([\w\-]+)(\s*=\s*)("[^"]*"|'[^']*')/g, function(_, space, attr, equals, value) {
     return `${space}<span class="code-property">${attr}</span>${equals}<span class="code-string">${value}</span>`;
   });
 
@@ -343,14 +348,17 @@ function highlightHTML(code) {
 // Custom syntax highlighter for CSS
 function highlightCSS(code) {
   // Replace CSS selectors
-  code = code.replace(/([\.\#]?[\w\-]+)(\s*\{)/g, function(match, selector, brace) {
+  code = code.replace(/([\.\#]?[\w\-]+)(\s*\{)/g, function(_, selector, brace) {
     return `<span class="code-selector">${selector}</span>${brace}`;
   });
 
   // Replace CSS properties
-  code = code.replace(/(\s+)([\w\-]+)(\s*:\s*)([^;]+)(;?)/g, function(match, space, prop, colon, value, semicolon) {
+  code = code.replace(/(\s+)([\w\-]+)(\s*:\s*)([^;]+)(;?)/g, function(_, space, prop, colon, value, semicolon) {
     return `${space}<span class="code-property">${prop}</span>${colon}<span class="code-value">${value}</span>${semicolon}`;
   });
+
+  // Replace CSS comments
+  code = code.replace(/(\/\*[\s\S]*?\*\/)/g, '<span class="code-comment">$1</span>');
 
   return code;
 }
@@ -358,7 +366,7 @@ function highlightCSS(code) {
 // Custom syntax highlighter for JavaScript
 function highlightJS(code) {
   // Replace JavaScript keywords
-  const keywords = ['var', 'let', 'const', 'function', 'return', 'if', 'else', 'for', 'while', 'class', 'new', 'this', 'import', 'export', 'from', 'try', 'catch', 'throw', 'async', 'await'];
+  const keywords = ['var', 'let', 'const', 'function', 'return', 'if', 'else', 'for', 'while', 'class', 'new', 'this', 'import', 'export', 'from', 'try', 'catch', 'throw', 'async', 'await', 'break', 'case', 'continue', 'default', 'do', 'extends', 'instanceof', 'switch', 'typeof'];
 
   keywords.forEach(keyword => {
     const regex = new RegExp(`\\b${keyword}\\b`, 'g');
@@ -368,8 +376,11 @@ function highlightJS(code) {
   // Replace strings
   code = code.replace(/(".*?"|'.*?'|`.*?`)/g, '<span class="code-string">$1</span>');
 
-  // Replace comments
+  // Replace single-line comments
   code = code.replace(/(\/\/.*$)/gm, '<span class="code-comment">$1</span>');
+
+  // Replace multi-line comments
+  code = code.replace(/(\/\*[\s\S]*?\*\/)/g, '<span class="code-comment">$1</span>');
 
   return code;
 }
