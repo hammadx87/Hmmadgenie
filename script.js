@@ -262,23 +262,26 @@ const formatCodeBlocks = (text, textElement, botMsgDiv) => {
       langIndicator.textContent = `~${language}`;
       codeHeader.appendChild(langIndicator);
 
-      // Add copy button
+      // Add copy button with simpler implementation
       const copyButton = document.createElement('button');
       copyButton.className = 'copy-button';
-      copyButton.textContent = 'Copy';
+      copyButton.innerHTML = '<span class="material-symbols-rounded">content_copy</span> Copy';
       copyButton.addEventListener('click', function() {
-        // Copy code to clipboard
-        navigator.clipboard.writeText(code).then(() => {
-          // Show copied state
-          copyButton.classList.add('copied');
-          copyButton.textContent = 'Copied!';
+        // Create a temporary textarea element to copy the code
+        const textarea = document.createElement('textarea');
+        textarea.value = code;
+        document.body.appendChild(textarea);
+        textarea.select();
+        document.execCommand('copy');
+        document.body.removeChild(textarea);
 
-          // Reset after 2 seconds
-          setTimeout(() => {
-            copyButton.classList.remove('copied');
-            copyButton.textContent = 'Copy';
-          }, 2000);
-        });
+        // Show copied state
+        copyButton.innerHTML = '<span class="material-symbols-rounded check-icon">check</span> Copied!';
+
+        // Reset after 2 seconds
+        setTimeout(() => {
+          copyButton.innerHTML = '<span class="material-symbols-rounded">content_copy</span> Copy';
+        }, 2000);
       });
       codeHeader.appendChild(copyButton);
 

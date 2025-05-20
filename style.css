@@ -406,15 +406,13 @@ body.keyboard-open .container .prompt-container {
   background-color: #2d3748;
 }
 
-.copy-button::before {
-  content: "content_copy";
-  font-family: 'Material Symbols Rounded';
+.copy-button .material-symbols-rounded {
   font-size: 16px;
   margin-right: 4px;
 }
 
-.copy-button.copied::before {
-  content: "check";
+/* Style for the check icon */
+.copy-button span.check-icon {
   color: #4CAFF0;
 }
 
