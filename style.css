@@ -725,10 +725,11 @@ body.recording #voice-input-btn {
 }
 
 .prompt-container .disclaimer-text {
-  font-size: 0.9rem;
+  font-size: 0.75rem;
   text-align: center;
-  padding: 16px 20px 0;
+  padding: 12px 20px 0;
   color: var(--placeholder-color);
+  opacity: 0.8;
 }
 
 /* Notification styles */
@@ -1116,8 +1117,9 @@ body.recording #voice-input-btn {
   }
 
   .prompt-container .disclaimer-text {
-    font-size: 0.75rem; /* Slightly reduced */
-    padding: 12px 15px 0;
+    font-size: 0.65rem; /* Further reduced */
+    padding: 10px 15px 0;
+    opacity: 0.7;
   }
 
   /* API key modal improvements */
@@ -1154,6 +1156,12 @@ body.recording #voice-input-btn {
 
   .code-block {
     font-size: 0.8rem;
+  }
+
+  .prompt-container .disclaimer-text {
+    font-size: 0.6rem; /* Even smaller for tiny screens */
+    padding: 8px 15px 0;
+    opacity: 0.6;
   }
 }
 
