@@ -222,64 +222,88 @@ const stopSpeech = () => {
 
 // Format code blocks in the response
 const formatCodeBlocks = (text, textElement, botMsgDiv) => {
+  console.log("formatCodeBlocks called with text length:", text.length);
+
+  // Clear the element and remove loading state
   textElement.innerHTML = ""; // Use innerHTML instead of textContent
   botMsgDiv.classList.remove("loading");
 
-  // More robust regex to match code blocks with or without language specification
-  // This pattern handles various formats that might come from different AI models
-  const codeBlockRegex = /```([\w-]*)?(?:\s*\n)([\s\S]*?)```/g;
+  try {
+    // More robust regex to match code blocks with or without language specification
+    // This pattern handles various formats that might come from different AI models
+    const codeBlockRegex = /```([\w-]*)?(?:\s*\n)([\s\S]*?)```/g;
 
-  let lastIndex = 0;
-  let match;
+    let lastIndex = 0;
+    let match;
+    let foundCodeBlock = false;
 
-  // Process each code block found in the text
-  while ((match = codeBlockRegex.exec(text)) !== null) {
-    // Add any text before this code block
-    if (match.index > lastIndex) {
-      const textBefore = text.substring(lastIndex, match.index);
-      if (textBefore.trim()) {
-        const textNode = document.createElement('span');
-        textNode.textContent = textBefore;
-        textElement.appendChild(textNode);
+    // Process each code block found in the text
+    while ((match = codeBlockRegex.exec(text)) !== null) {
+      foundCodeBlock = true;
+      console.log("Found code block with language:", match[1] || "unspecified");
+
+      // Add any text before this code block
+      if (match.index > lastIndex) {
+        const textBefore = text.substring(lastIndex, match.index);
+        if (textBefore.trim()) {
+          const textNode = document.createElement('span');
+          textNode.textContent = textBefore;
+          textElement.appendChild(textNode);
+        }
       }
-    }
 
-    // Extract language and code
-    const language = match[1]?.trim() || 'javascript'; // Default to JavaScript if no language specified
-    const code = match[2].trim();
+      // Extract language and code
+      const language = match[1]?.trim() || 'javascript'; // Default to JavaScript if no language specified
+      const code = match[2].trim();
 
-    // Create container for code block
-    const codeContainer = document.createElement('div');
-    codeContainer.className = 'code-container';
+      // Create container for code block
+      const codeContainer = document.createElement('div');
+      codeContainer.className = 'code-container';
 
-    // Create header
-    const codeHeader = document.createElement('div');
-    codeHeader.className = 'code-header';
+      // Create header
+      const codeHeader = document.createElement('div');
+      codeHeader.className = 'code-header';
 
-    // Add language indicator
-    const langIndicator = document.createElement('div');
-    langIndicator.className = 'code-language';
-    langIndicator.textContent = language;
-    codeHeader.appendChild(langIndicator);
+      // Add language indicator
+      const langIndicator = document.createElement('div');
+      langIndicator.className = 'code-language';
+      langIndicator.textContent = language;
+      codeHeader.appendChild(langIndicator);
 
-    // Add copy button
-    const copyButton = document.createElement('button');
-    copyButton.className = 'copy-button';
-    copyButton.innerHTML = '<span class="material-symbols-rounded">content_copy</span> Copy';
+      // Add copy button
+      const copyButton = document.createElement('button');
+      copyButton.className = 'copy-button';
+      copyButton.innerHTML = '<span class="material-symbols-rounded">content_copy</span> Copy';
 
-    // Use modern clipboard API with fallback
-    copyButton.addEventListener('click', () => {
-      if (navigator.clipboard && navigator.clipboard.writeText) {
-        navigator.clipboard.writeText(code)
-          .then(() => {
-            copyButton.innerHTML = '<span class="material-symbols-rounded">check</span> Copied';
-            setTimeout(() => {
-              copyButton.innerHTML = '<span class="material-symbols-rounded">content_copy</span> Copy';
-            }, 2000);
-          })
-          .catch(err => {
-            console.error('Failed to copy: ', err);
-            // Fallback to older method
+      // Use modern clipboard API with fallback
+      copyButton.addEventListener('click', () => {
+        try {
+          if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(code)
+              .then(() => {
+                copyButton.innerHTML = '<span class="material-symbols-rounded">check</span> Copied';
+                setTimeout(() => {
+                  copyButton.innerHTML = '<span class="material-symbols-rounded">content_copy</span> Copy';
+                }, 2000);
+              })
+              .catch(err => {
+                console.error('Failed to copy: ', err);
+                // Fallback to older method
+                const textarea = document.createElement('textarea');
+                textarea.value = code;
+                textarea.style.position = 'fixed';
+                document.body.appendChild(textarea);
+                textarea.select();
+                document.execCommand('copy');
+                document.body.removeChild(textarea);
+
+                copyButton.innerHTML = '<span class="material-symbols-rounded">check</span> Copied';
+                setTimeout(() => {
+                  copyButton.innerHTML = '<span class="material-symbols-rounded">content_copy</span> Copy';
+                }, 2000);
+              });
+          } else {
+            // Fallback for browsers without clipboard API
             const textarea = document.createElement('textarea');
             textarea.value = code;
             textarea.style.position = 'fixed';
@@ -292,59 +316,64 @@ const formatCodeBlocks = (text, textElement, botMsgDiv) => {
             setTimeout(() => {
               copyButton.innerHTML = '<span class="material-symbols-rounded">content_copy</span> Copy';
             }, 2000);
-          });
-      } else {
-        // Fallback for browsers without clipboard API
-        const textarea = document.createElement('textarea');
-        textarea.value = code;
-        textarea.style.position = 'fixed';
-        document.body.appendChild(textarea);
-        textarea.select();
-        document.execCommand('copy');
-        document.body.removeChild(textarea);
+          }
+        } catch (e) {
+          console.error("Error in copy button handler:", e);
+        }
+      });
 
-        copyButton.innerHTML = '<span class="material-symbols-rounded">check</span> Copied';
-        setTimeout(() => {
-          copyButton.innerHTML = '<span class="material-symbols-rounded">content_copy</span> Copy';
-        }, 2000);
+      codeHeader.appendChild(copyButton);
+
+      // Add header to container
+      codeContainer.appendChild(codeHeader);
+
+      // Create code block
+      const codeBlock = document.createElement('div');
+      codeBlock.className = 'code-block';
+
+      // Apply syntax highlighting based on language
+      let highlightedCode = code;
+      try {
+        if (language === 'html') {
+          highlightedCode = highlightHTML(code);
+        } else if (language === 'css') {
+          highlightedCode = highlightCSS(code);
+        } else if (language === 'javascript' || language === 'js') {
+          highlightedCode = highlightJS(code);
+        }
+      } catch (e) {
+        console.error("Error applying syntax highlighting:", e);
+        // If highlighting fails, use the original code
+        highlightedCode = code;
       }
-    });
 
-    codeHeader.appendChild(copyButton);
+      codeBlock.innerHTML = highlightedCode;
+      codeContainer.appendChild(codeBlock);
+      textElement.appendChild(codeContainer);
 
-    // Add header to container
-    codeContainer.appendChild(codeHeader);
-
-    // Create code block
-    const codeBlock = document.createElement('div');
-    codeBlock.className = 'code-block';
-
-    // Apply syntax highlighting based on language
-    let highlightedCode = code;
-    if (language === 'html') {
-      highlightedCode = highlightHTML(code);
-    } else if (language === 'css') {
-      highlightedCode = highlightCSS(code);
-    } else if (language === 'javascript' || language === 'js') {
-      highlightedCode = highlightJS(code);
+      // Update lastIndex to after this code block
+      lastIndex = codeBlockRegex.lastIndex;
     }
 
-    codeBlock.innerHTML = highlightedCode;
-    codeContainer.appendChild(codeBlock);
-    textElement.appendChild(codeContainer);
-
-    // Update lastIndex to after this code block
-    lastIndex = codeBlockRegex.lastIndex;
-  }
-
-  // Add any remaining text after the last code block
-  if (lastIndex < text.length) {
-    const textAfter = text.substring(lastIndex);
-    if (textAfter.trim()) {
-      const textNode = document.createElement('span');
-      textNode.textContent = textAfter;
-      textElement.appendChild(textNode);
+    // If no code blocks were found, just add the text as is
+    if (!foundCodeBlock) {
+      console.log("No code blocks found, adding text as is");
+      textElement.textContent = text;
+    } else {
+      // Add any remaining text after the last code block
+      if (lastIndex < text.length) {
+        const textAfter = text.substring(lastIndex);
+        if (textAfter.trim()) {
+          const textNode = document.createElement('span');
+          textNode.textContent = textAfter;
+          textElement.appendChild(textNode);
+        }
+      }
     }
+  } catch (error) {
+    console.error("Error in formatCodeBlocks:", error);
+    // Fallback: just show the text without formatting
+    textElement.textContent = text;
   }
 
   document.body.classList.remove("bot-responding");
@@ -353,69 +382,118 @@ const formatCodeBlocks = (text, textElement, botMsgDiv) => {
 
 // Custom syntax highlighter for HTML
 function highlightHTML(code) {
-  // Replace DOCTYPE
-  code = code.replace(/(&lt;|<)(!DOCTYPE\s+html)(&gt;|>)/gi, function(_, open, doctype, close) {
-    return `${open}<span class="code-doctype">${doctype}</span>${close}`;
-  });
+  try {
+    // Escape HTML entities if not already escaped
+    if (code.indexOf('&lt;') === -1) {
+      code = code.replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    }
 
-  // Replace HTML tags
-  code = code.replace(/(&lt;|<)(\/?)([\w\-]+)(.*?)(&gt;|>)/g, function(_, open, slash, tag, attrs, close) {
-    return `${open}<span class="code-tag">${slash}${tag}</span>${attrs}${close}`;
-  });
+    // Replace DOCTYPE
+    code = code.replace(/(&lt;)(!DOCTYPE\s+html)(&gt;)/gi, function(_, open, doctype, close) {
+      return `${open}<span class="code-doctype">${doctype}</span>${close}`;
+    });
 
-  // Replace attributes
-  code = code.replace(/(\s+)([\w\-]+)(\s*=\s*)("[^"]*"|'[^']*')/g, function(_, space, attr, equals, value) {
-    return `${space}<span class="code-property">${attr}</span>${equals}<span class="code-string">${value}</span>`;
-  });
+    // Replace HTML tags
+    code = code.replace(/(&lt;)(\/?)([\w\-]+)(.*?)(&gt;)/g, function(_, open, slash, tag, attrs, close) {
+      return `${open}<span class="code-tag">${slash}${tag}</span>${attrs}${close}`;
+    });
 
-  // Add indentation
-  code = code.replace(/^(\s*)(.+)$/gm, function(_, indent, content) {
-    // Replace spaces with non-breaking spaces for proper indentation
-    const nbspIndent = indent.replace(/ /g, '&nbsp;');
-    return nbspIndent + content;
-  });
+    // Replace attributes
+    code = code.replace(/(\s+)([\w\-]+)(\s*=\s*)("[^"]*"|'[^']*')/g, function(_, space, attr, equals, value) {
+      return `${space}<span class="code-property">${attr}</span>${equals}<span class="code-string">${value}</span>`;
+    });
 
-  return code;
+    // Add indentation
+    code = code.replace(/^(\s*)(.+)$/gm, function(_, indent, content) {
+      // Replace spaces with non-breaking spaces for proper indentation
+      const nbspIndent = indent.replace(/ /g, '&nbsp;');
+      return nbspIndent + content;
+    });
+
+    return code;
+  } catch (e) {
+    console.error("Error in highlightHTML:", e);
+    // Return the original code if highlighting fails
+    return code.replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  }
 }
 
 // Custom syntax highlighter for CSS
 function highlightCSS(code) {
-  // Replace CSS selectors
-  code = code.replace(/([\.\#]?[\w\-]+)(\s*\{)/g, function(_, selector, brace) {
-    return `<span class="code-selector">${selector}</span>${brace}`;
-  });
+  try {
+    // Escape HTML entities if not already escaped
+    if (code.indexOf('&lt;') === -1) {
+      code = code.replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    }
 
-  // Replace CSS properties
-  code = code.replace(/(\s+)([\w\-]+)(\s*:\s*)([^;]+)(;?)/g, function(_, space, prop, colon, value, semicolon) {
-    return `${space}<span class="code-property">${prop}</span>${colon}<span class="code-value">${value}</span>${semicolon}`;
-  });
+    // Replace CSS selectors
+    code = code.replace(/([\.\#]?[\w\-]+)(\s*\{)/g, function(_, selector, brace) {
+      return `<span class="code-selector">${selector}</span>${brace}`;
+    });
 
-  // Replace CSS comments
-  code = code.replace(/(\/\*[\s\S]*?\*\/)/g, '<span class="code-comment">$1</span>');
+    // Replace CSS properties
+    code = code.replace(/(\s+)([\w\-]+)(\s*:\s*)([^;]+)(;?)/g, function(_, space, prop, colon, value, semicolon) {
+      return `${space}<span class="code-property">${prop}</span>${colon}<span class="code-value">${value}</span>${semicolon}`;
+    });
 
-  return code;
+    // Replace CSS comments
+    code = code.replace(/(\/\*[\s\S]*?\*\/)/g, '<span class="code-comment">$1</span>');
+
+    // Add indentation
+    code = code.replace(/^(\s*)(.+)$/gm, function(_, indent, content) {
+      // Replace spaces with non-breaking spaces for proper indentation
+      const nbspIndent = indent.replace(/ /g, '&nbsp;');
+      return nbspIndent + content;
+    });
+
+    return code;
+  } catch (e) {
+    console.error("Error in highlightCSS:", e);
+    // Return the original code if highlighting fails
+    return code.replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  }
 }
 
 // Custom syntax highlighter for JavaScript
 function highlightJS(code) {
-  // Replace JavaScript keywords
-  const keywords = ['var', 'let', 'const', 'function', 'return', 'if', 'else', 'for', 'while', 'class', 'new', 'this', 'import', 'export', 'from', 'try', 'catch', 'throw', 'async', 'await', 'break', 'case', 'continue', 'default', 'do', 'extends', 'instanceof', 'switch', 'typeof'];
+  try {
+    // Escape HTML entities if not already escaped
+    if (code.indexOf('&lt;') === -1) {
+      code = code.replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    }
 
-  keywords.forEach(keyword => {
-    const regex = new RegExp(`\\b${keyword}\\b`, 'g');
-    code = code.replace(regex, `<span class="code-keyword">${keyword}</span>`);
-  });
+    // Replace JavaScript keywords
+    const keywords = ['var', 'let', 'const', 'function', 'return', 'if', 'else', 'for', 'while', 'class', 'new', 'this', 'import', 'export', 'from', 'try', 'catch', 'throw', 'async', 'await', 'break', 'case', 'continue', 'default', 'do', 'extends', 'instanceof', 'switch', 'typeof'];
 
-  // Replace strings
-  code = code.replace(/(".*?"|'.*?'|`.*?`)/g, '<span class="code-string">$1</span>');
+    // Use a safer approach to replace keywords
+    let highlightedCode = code;
+    keywords.forEach(keyword => {
+      const regex = new RegExp(`\\b${keyword}\\b`, 'g');
+      highlightedCode = highlightedCode.replace(regex, `<span class="code-keyword">${keyword}</span>`);
+    });
 
-  // Replace single-line comments
-  code = code.replace(/(\/\/.*$)/gm, '<span class="code-comment">$1</span>');
+    // Replace strings - be more careful with regex
+    highlightedCode = highlightedCode.replace(/("(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*'|`(?:\\.|[^`\\])*`)/g, '<span class="code-string">$1</span>');
 
-  // Replace multi-line comments
-  code = code.replace(/(\/\*[\s\S]*?\*\/)/g, '<span class="code-comment">$1</span>');
+    // Replace single-line comments
+    highlightedCode = highlightedCode.replace(/(\/\/[^\n]*)/g, '<span class="code-comment">$1</span>');
 
-  return code;
+    // Replace multi-line comments
+    highlightedCode = highlightedCode.replace(/(\/\*[\s\S]*?\*\/)/g, '<span class="code-comment">$1</span>');
+
+    // Add indentation
+    highlightedCode = highlightedCode.replace(/^(\s*)(.+)$/gm, function(_, indent, content) {
+      // Replace spaces with non-breaking spaces for proper indentation
+      const nbspIndent = indent.replace(/ /g, '&nbsp;');
+      return nbspIndent + content;
+    });
+
+    return highlightedCode;
+  } catch (e) {
+    console.error("Error in highlightJS:", e);
+    // Return the original code if highlighting fails
+    return code.replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  }
 }
 
 // Simulate typing effect for bot responses
@@ -525,6 +603,13 @@ const generateResponse = async (botMsgDiv) => {
 
     // Process the response text and display with typing effect
     const responseText = data.candidates[0].content.parts[0].text.replace(/\*\*([^\*]+)\*\*/g, "$1").trim();
+
+    console.log("Response received, length:", responseText.length);
+    console.log("First 100 chars:", responseText.substring(0, 100));
+
+    // Check if the response contains code blocks
+    const hasCodeBlocks = responseText.includes("```");
+    console.log("Response contains code blocks:", hasCodeBlocks);
 
     // Always use formatCodeBlocks for all responses
     // This ensures code blocks are always detected and rendered properly
