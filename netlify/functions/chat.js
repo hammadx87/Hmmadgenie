@@ -128,6 +128,33 @@ exports.handler = async function(event) {
       try {
         errorData = await response.json();
         console.error('Gemini API Error:', response.status, JSON.stringify(errorData));
+
+        // Check specifically for API key issues
+        const errorMessage = errorData.error?.message || '';
+        const isApiKeyError =
+          errorMessage.includes('API key') ||
+          errorMessage.includes('apiKey') ||
+          errorMessage.includes('key not valid') ||
+          response.status === 403 ||
+          response.status === 401;
+
+        if (isApiKeyError) {
+          console.error('API KEY ERROR: The Gemini API key appears to be invalid or unauthorized');
+          console.error('Please check your API key in Netlify environment variables');
+          console.error('Get a new key from: https://makersuite.google.com/app/apikey');
+
+          return {
+            statusCode: response.status,
+            headers,
+            body: JSON.stringify({
+              error: {
+                message: 'API key not valid. Please pass a valid API key.',
+                status: response.status,
+                details: 'The API key for Gemini is invalid or unauthorized. Please contact the administrator to update the API key.'
+              }
+            })
+          };
+        }
       } catch (e) {
         console.error('Failed to parse error response:', e.message);
         console.error('Response status:', response.status);

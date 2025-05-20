@@ -9,7 +9,7 @@ const themeToggleBtn = document.querySelector("#theme-toggle-btn");
 const voiceInputBtn = document.querySelector("#voice-input-btn");
 
 // API Setup
-const API_URL = '/api/chat'; // Path to our Express server endpoint
+const API_URL = '/api/chat'; // Path to Netlify function endpoint
 
 // Speech recognition setup
 let recognition = null;
@@ -494,6 +494,9 @@ const generateResponse = async (botMsgDiv) => {
       errorMessage = "The request timed out. The AI service is taking too long to respond. Please try again with a simpler question.";
     } else if (error.name === "AbortError") {
       errorMessage = "Response generation stopped.";
+    } else if (error.message.includes('API key not valid') || error.message.includes('key not valid')) {
+      errorMessage = "API key not valid. Please contact the administrator to update the API key.";
+      console.error("API KEY ERROR: The Gemini API key is invalid or unauthorized");
     } else if (error.message.includes('Server configuration error')) {
       errorMessage = "The server is missing required configuration. Please contact the administrator.";
     } else if (error.message.includes('Server error') || error.message.includes('500')) {
