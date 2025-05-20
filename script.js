@@ -220,186 +220,159 @@ const stopSpeech = () => {
   }
 };
 
-// Format code blocks in the response
+// Format code blocks in the response - SIMPLIFIED VERSION FOR PRODUCTION
 const formatCodeBlocks = (text, textElement, botMsgDiv) => {
-  console.log("formatCodeBlocks called with text length:", text.length);
+  console.log("[PRODUCTION] formatCodeBlocks called with text length:", text.length);
 
   // Clear the element and remove loading state
   textElement.innerHTML = ""; // Use innerHTML instead of textContent
   botMsgDiv.classList.remove("loading");
 
   try {
-    // Even more robust regex to match code blocks with or without language specification
-    // This pattern handles various formats that might come from different AI models
-    // Including those with leading/trailing spaces around triple backticks
-    const codeBlockRegex = /```\s*([\w-]*)?(?:\s*\n)([\s\S]*?)```\s*/g;
+    // Split the text by code block markers
+    const parts = text.split("```");
 
-    let lastIndex = 0;
-    let match;
-    let foundCodeBlock = false;
-
-    // Process each code block found in the text
-    while ((match = codeBlockRegex.exec(text)) !== null) {
-      foundCodeBlock = true;
-      console.log("Found code block with language:", match[1] || "unspecified");
-
-      // Add any text before this code block
-      if (match.index > lastIndex) {
-        const textBefore = text.substring(lastIndex, match.index);
-        if (textBefore.trim()) {
-          const textNode = document.createElement('span');
-          textNode.textContent = textBefore;
-          textElement.appendChild(textNode);
-        }
-      }
-
-      try {
-        // Extract language and code
-        const language = (match[1] || '').trim().toLowerCase() || 'javascript'; // Default to JavaScript if no language specified
-        const code = match[2].trim();
-
-        console.log(`Processing code block with language: ${language}, length: ${code.length}`);
-
-        // Create container for code block
-        const codeContainer = document.createElement('div');
-        codeContainer.className = 'code-container';
-
-        // Create header
-        const codeHeader = document.createElement('div');
-        codeHeader.className = 'code-header';
-
-        // Add language indicator
-        const langIndicator = document.createElement('div');
-        langIndicator.className = 'code-language';
-        langIndicator.textContent = language;
-        codeHeader.appendChild(langIndicator);
-
-        // Add copy button
-        const copyButton = document.createElement('button');
-        copyButton.className = 'copy-button';
-        copyButton.innerHTML = '<span class="material-symbols-rounded">content_copy</span> Copy';
-
-        // Use modern clipboard API with fallback
-        copyButton.addEventListener('click', () => {
-          try {
-            if (navigator.clipboard && navigator.clipboard.writeText) {
-              navigator.clipboard.writeText(code)
-                .then(() => {
-                  copyButton.innerHTML = '<span class="material-symbols-rounded">check</span> Copied';
-                  setTimeout(() => {
-                    copyButton.innerHTML = '<span class="material-symbols-rounded">content_copy</span> Copy';
-                  }, 2000);
-                })
-                .catch(err => {
-                  console.error('Failed to copy: ', err);
-                  // Fallback to older method
-                  const textarea = document.createElement('textarea');
-                  textarea.value = code;
-                  textarea.style.position = 'fixed';
-                  document.body.appendChild(textarea);
-                  textarea.select();
-                  document.execCommand('copy');
-                  document.body.removeChild(textarea);
-
-                  copyButton.innerHTML = '<span class="material-symbols-rounded">check</span> Copied';
-                  setTimeout(() => {
-                    copyButton.innerHTML = '<span class="material-symbols-rounded">content_copy</span> Copy';
-                  }, 2000);
-                });
-            } else {
-              // Fallback for browsers without clipboard API
-              const textarea = document.createElement('textarea');
-              textarea.value = code;
-              textarea.style.position = 'fixed';
-              document.body.appendChild(textarea);
-              textarea.select();
-              document.execCommand('copy');
-              document.body.removeChild(textarea);
-
-              copyButton.innerHTML = '<span class="material-symbols-rounded">check</span> Copied';
-              setTimeout(() => {
-                copyButton.innerHTML = '<span class="material-symbols-rounded">content_copy</span> Copy';
-              }, 2000);
-            }
-          } catch (e) {
-            console.error("Error in copy button handler:", e);
-            // Show error notification
-            showNotification("Failed to copy code. Please try again.", "error");
-          }
-        });
-
-        codeHeader.appendChild(copyButton);
-
-        // Add header to container
-        codeContainer.appendChild(codeHeader);
-
-        // Create code block
-        const codeBlock = document.createElement('div');
-        codeBlock.className = 'code-block';
-
-        // Apply syntax highlighting based on language
-        let highlightedCode = code;
-        try {
-          if (language === 'html') {
-            highlightedCode = highlightHTML(code);
-          } else if (language === 'css') {
-            highlightedCode = highlightCSS(code);
-          } else if (language === 'javascript' || language === 'js') {
-            highlightedCode = highlightJS(code);
-          } else {
-            // For other languages, at least escape HTML entities
-            highlightedCode = code.replace(/</g, '&lt;').replace(/>/g, '&gt;');
-
-            // Add indentation
-            highlightedCode = highlightedCode.replace(/^(\s*)(.+)$/gm, function(_, indent, content) {
-              // Replace spaces with non-breaking spaces for proper indentation
-              const nbspIndent = indent.replace(/ /g, '&nbsp;');
-              return nbspIndent + content;
-            });
-          }
-        } catch (e) {
-          console.error("Error applying syntax highlighting:", e);
-          // If highlighting fails, use the original code but ensure HTML entities are escaped
-          highlightedCode = code.replace(/</g, '&lt;').replace(/>/g, '&gt;');
-        }
-
-        codeBlock.innerHTML = highlightedCode;
-        codeContainer.appendChild(codeBlock);
-        textElement.appendChild(codeContainer);
-      } catch (blockError) {
-        console.error("Error processing individual code block:", blockError);
-        // If there's an error processing this block, add it as plain text
-        const errorNode = document.createElement('div');
-        errorNode.className = 'code-container';
-        errorNode.innerHTML = `<div class="code-block">${match[0].replace(/</g, '&lt;').replace(/>/g, '&gt;')}</div>`;
-        textElement.appendChild(errorNode);
-      }
-
-      // Update lastIndex to after this code block
-      lastIndex = codeBlockRegex.lastIndex;
+    // If there's only one part, there are no code blocks
+    if (parts.length === 1) {
+      console.log("[PRODUCTION] No code blocks found, adding text as is");
+      textElement.textContent = text;
+      document.body.classList.remove("bot-responding");
+      scrollToBottom();
+      return;
     }
 
-    // If no code blocks were found, just add the text as is
-    if (!foundCodeBlock) {
-      console.log("No code blocks found, adding text as is");
-      textElement.textContent = text;
-    } else {
-      // Add any remaining text after the last code block
-      if (lastIndex < text.length) {
-        const textAfter = text.substring(lastIndex);
-        if (textAfter.trim()) {
+    console.log("[PRODUCTION] Found code blocks, parts length:", parts.length);
+
+    // Process each part
+    for (let i = 0; i < parts.length; i++) {
+      if (i % 2 === 0) {
+        // This is regular text (before, between, or after code blocks)
+        if (parts[i].trim()) {
           const textNode = document.createElement('span');
-          textNode.textContent = textAfter;
+          textNode.textContent = parts[i];
           textElement.appendChild(textNode);
+        }
+      } else {
+        // This is a code block
+        try {
+          // Extract language and code
+          let code = parts[i];
+          let language = 'javascript'; // Default
+
+          // Check if the first line contains a language specification
+          const firstLineBreak = code.indexOf('\n');
+          if (firstLineBreak > 0) {
+            const possibleLang = code.substring(0, firstLineBreak).trim().toLowerCase();
+            if (possibleLang && !possibleLang.includes(' ')) {
+              language = possibleLang;
+              code = code.substring(firstLineBreak + 1);
+            }
+          }
+
+          code = code.trim();
+          console.log(`[PRODUCTION] Processing code block with language: ${language}, length: ${code.length}`);
+
+          // Create container for code block
+          const codeContainer = document.createElement('div');
+          codeContainer.className = 'code-container';
+
+          // Create header
+          const codeHeader = document.createElement('div');
+          codeHeader.className = 'code-header';
+
+          // Add language indicator
+          const langIndicator = document.createElement('div');
+          langIndicator.className = 'code-language';
+          langIndicator.textContent = language;
+          codeHeader.appendChild(langIndicator);
+
+          // Add copy button
+          const copyButton = document.createElement('button');
+          copyButton.className = 'copy-button';
+          copyButton.innerHTML = '<span class="material-symbols-rounded">content_copy</span> Copy';
+
+          // Store the code in a data attribute for easy access
+          copyButton.setAttribute('data-code', code);
+
+          // Simple copy function
+          copyButton.addEventListener('click', function() {
+            const codeToClipboard = this.getAttribute('data-code');
+            try {
+              // Create a temporary textarea
+              const textarea = document.createElement('textarea');
+              textarea.value = codeToClipboard;
+              document.body.appendChild(textarea);
+              textarea.select();
+
+              // Try to copy
+              const successful = document.execCommand('copy');
+              document.body.removeChild(textarea);
+
+              if (successful) {
+                this.innerHTML = '<span class="material-symbols-rounded">check</span> Copied';
+                setTimeout(() => {
+                  this.innerHTML = '<span class="material-symbols-rounded">content_copy</span> Copy';
+                }, 2000);
+              } else {
+                throw new Error('Copy command was unsuccessful');
+              }
+            } catch (err) {
+              console.error('Failed to copy code:', err);
+              showNotification("Failed to copy code. Please try again.", "error");
+            }
+          });
+
+          codeHeader.appendChild(copyButton);
+          codeContainer.appendChild(codeHeader);
+
+          // Create code block
+          const codeBlock = document.createElement('div');
+          codeBlock.className = 'code-block';
+
+          // Apply syntax highlighting based on language
+          let highlightedCode = code;
+
+          // Always escape HTML entities first
+          highlightedCode = code.replace(/</g, '&lt;').replace(/>/g, '&gt;');
+
+          try {
+            if (language === 'html') {
+              highlightedCode = highlightHTML(highlightedCode);
+            } else if (language === 'css') {
+              highlightedCode = highlightCSS(highlightedCode);
+            } else if (language === 'javascript' || language === 'js') {
+              highlightedCode = highlightJS(highlightedCode);
+            } else {
+              // For other languages, just add indentation
+              highlightedCode = highlightedCode.replace(/^(\s*)(.+)$/gm, function(_, indent, content) {
+                const nbspIndent = indent.replace(/ /g, '&nbsp;');
+                return nbspIndent + content;
+              });
+            }
+          } catch (e) {
+            console.error("[PRODUCTION] Error applying syntax highlighting:", e);
+            // Already escaped HTML entities above, so no need to do it again
+          }
+
+          codeBlock.innerHTML = highlightedCode;
+          codeContainer.appendChild(codeBlock);
+          textElement.appendChild(codeContainer);
+        } catch (blockError) {
+          console.error("[PRODUCTION] Error processing individual code block:", blockError);
+          // If there's an error processing this block, add it as plain text
+          const errorNode = document.createElement('div');
+          errorNode.className = 'code-container';
+          errorNode.innerHTML = `<div class="code-block">${parts[i].replace(/</g, '&lt;').replace(/>/g, '&gt;')}</div>`;
+          textElement.appendChild(errorNode);
         }
       }
     }
   } catch (error) {
-    console.error("Error in formatCodeBlocks:", error);
+    console.error("[PRODUCTION] Error in formatCodeBlocks:", error);
     // Fallback: just show the text without formatting
     textElement.textContent = text;
-    // Show error notification
-    showNotification("Error formatting code blocks. Plain text displayed instead.", "error");
+    // Show error notification in console
+    console.error("[PRODUCTION] Error formatting code blocks. Plain text displayed instead.");
   }
 
   document.body.classList.remove("bot-responding");
