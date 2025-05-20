@@ -9,7 +9,7 @@ const themeToggleBtn = document.querySelector("#theme-toggle-btn");
 const voiceInputBtn = document.querySelector("#voice-input-btn");
 
 // API Setup
-const API_URL = '/.netlify/functions/chat'; // Direct path to Netlify function
+const API_URL = '/api/chat'; // Path to our Express server endpoint
 
 // Speech recognition setup
 let recognition = null;
@@ -220,6 +220,157 @@ const stopSpeech = () => {
   }
 };
 
+// Format code blocks in the response
+const formatCodeBlocks = (text, textElement, botMsgDiv) => {
+  textElement.textContent = "";
+  botMsgDiv.classList.remove("loading");
+
+  // Split the text by code blocks
+  const parts = text.split(/(```[\s\S]*?```)/g);
+
+  for (let i = 0; i < parts.length; i++) {
+    const part = parts[i];
+
+    if (part.startsWith("```") && part.endsWith("```")) {
+      // This is a code block
+      const codeContent = part.slice(3, -3).trim();
+      const firstLineBreak = codeContent.indexOf('\n');
+
+      // Check if there's a language specified
+      let language = 'javascript'; // Default language
+      let code = codeContent;
+
+      if (firstLineBreak > 0) {
+        const possibleLang = codeContent.slice(0, firstLineBreak).trim();
+        if (possibleLang && !possibleLang.includes(' ')) {
+          language = possibleLang;
+          code = codeContent.slice(firstLineBreak + 1);
+        }
+      }
+
+      // Create container for code block
+      const codeContainer = document.createElement('div');
+      codeContainer.className = 'code-container';
+
+      // Create header with language indicator and copy button
+      const codeHeader = document.createElement('div');
+      codeHeader.className = 'code-header';
+
+      // Add language indicator
+      const langIndicator = document.createElement('div');
+      langIndicator.className = 'code-language';
+      langIndicator.textContent = `~${language}`;
+      codeHeader.appendChild(langIndicator);
+
+      // Add copy button
+      const copyButton = document.createElement('button');
+      copyButton.className = 'copy-button';
+      copyButton.textContent = 'Copy';
+      copyButton.addEventListener('click', function() {
+        // Copy code to clipboard
+        navigator.clipboard.writeText(code).then(() => {
+          // Show copied state
+          copyButton.classList.add('copied');
+          copyButton.textContent = 'Copied!';
+
+          // Reset after 2 seconds
+          setTimeout(() => {
+            copyButton.classList.remove('copied');
+            copyButton.textContent = 'Copy';
+          }, 2000);
+        });
+      });
+      codeHeader.appendChild(copyButton);
+
+      // Add header to container
+      codeContainer.appendChild(codeHeader);
+
+      // Create code block
+      const codeBlock = document.createElement('div');
+      codeBlock.className = 'code-block';
+
+      // Apply syntax highlighting based on language
+      if (language === 'html') {
+        code = highlightHTML(code);
+      } else if (language === 'css') {
+        code = highlightCSS(code);
+      } else if (language === 'javascript' || language === 'js') {
+        code = highlightJS(code);
+      } else {
+        // For other languages, just add the code as is
+        codeBlock.textContent = code;
+      }
+
+      if (language === 'html' || language === 'css' || language === 'javascript' || language === 'js') {
+        codeBlock.innerHTML = code;
+      }
+
+      // Add code block to container
+      codeContainer.appendChild(codeBlock);
+
+      // Add container to message
+      textElement.appendChild(codeContainer);
+    } else {
+      // This is regular text
+      const textNode = document.createElement('span');
+      textNode.textContent = part;
+      textElement.appendChild(textNode);
+    }
+  }
+
+  document.body.classList.remove("bot-responding");
+  scrollToBottom();
+};
+
+// Custom syntax highlighter for HTML
+function highlightHTML(code) {
+  // Replace HTML tags
+  code = code.replace(/(&lt;|<)(\/?)([\w\-]+)(.*?)(&gt;|>)/g, function(match, open, slash, tag, attrs, close) {
+    return `${open}<span class="code-tag">${slash}${tag}</span>${attrs}${close}`;
+  });
+
+  // Replace attributes
+  code = code.replace(/(\s+)([\w\-]+)(\s*=\s*)("[^"]*"|'[^']*')/g, function(match, space, attr, equals, value) {
+    return `${space}<span class="code-property">${attr}</span>${equals}<span class="code-string">${value}</span>`;
+  });
+
+  return code;
+}
+
+// Custom syntax highlighter for CSS
+function highlightCSS(code) {
+  // Replace CSS selectors
+  code = code.replace(/([\.\#]?[\w\-]+)(\s*\{)/g, function(match, selector, brace) {
+    return `<span class="code-selector">${selector}</span>${brace}`;
+  });
+
+  // Replace CSS properties
+  code = code.replace(/(\s+)([\w\-]+)(\s*:\s*)([^;]+)(;?)/g, function(match, space, prop, colon, value, semicolon) {
+    return `${space}<span class="code-property">${prop}</span>${colon}<span class="code-value">${value}</span>${semicolon}`;
+  });
+
+  return code;
+}
+
+// Custom syntax highlighter for JavaScript
+function highlightJS(code) {
+  // Replace JavaScript keywords
+  const keywords = ['var', 'let', 'const', 'function', 'return', 'if', 'else', 'for', 'while', 'class', 'new', 'this', 'import', 'export', 'from', 'try', 'catch', 'throw', 'async', 'await'];
+
+  keywords.forEach(keyword => {
+    const regex = new RegExp(`\\b${keyword}\\b`, 'g');
+    code = code.replace(regex, `<span class="code-keyword">${keyword}</span>`);
+  });
+
+  // Replace strings
+  code = code.replace(/(".*?"|'.*?'|`.*?`)/g, '<span class="code-string">$1</span>');
+
+  // Replace comments
+  code = code.replace(/(\/\/.*$)/gm, '<span class="code-comment">$1</span>');
+
+  return code;
+}
+
 // Simulate typing effect for bot responses
 const typingEffect = (text, textElement, botMsgDiv) => {
   textElement.textContent = "";
@@ -254,7 +405,7 @@ const generateResponse = async (botMsgDiv) => {
     "who's your creator",
     "who's your developer"
   ];
-  
+
   if (creatorQuestions.some(q => userData.message.toLowerCase().includes(q))) {
     const creatorResponse = "I was created by Hammad, a talented full-stack developer with expertise in modern web technologies. He developed me as an AI assistant to help users with various tasks. Hammad is passionate about creating innovative solutions and enhancing user experiences through technology. I'm proud to be one of his projects!";
     typingEffect(creatorResponse, textElement, botMsgDiv);
@@ -264,68 +415,159 @@ const generateResponse = async (botMsgDiv) => {
 
   // API key is now hardcoded, no need to check
 
-  // Add user message and file data to the chat history
+  // Instead of sending the full chat history, just send the current message
+  // This helps prevent timeouts by keeping requests smaller
+  const simplifiedChatHistory = [
+    {
+      role: "user",
+      parts: [{ text: userData.message }, ...(userData.file.data ? [{ inline_data: (({ fileName, isImage, ...rest }) => rest)(userData.file) }] : [])]
+    }
+  ];
+
+  // Still add to the full chat history for context in the UI
   chatHistory.push({
     role: "user",
     parts: [{ text: userData.message }, ...(userData.file.data ? [{ inline_data: (({ fileName, isImage, ...rest }) => rest)(userData.file) }] : [])],
   });
 
   try {
-    // Send the chat history to the API to get a response
+    console.log('Sending simplified request to API:', JSON.stringify(simplifiedChatHistory));
+
+    // Set up a timeout for the fetch request
+    const timeoutId = setTimeout(() => {
+      controller.abort();
+    }, 25000); // 25 seconds timeout
+
+    // Send only the current message to the API to get a response
     const response = await fetch(API_URL, {
       method: "POST",
-      headers: { 
+      headers: {
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({ contents: chatHistory }),
+      body: JSON.stringify({ contents: simplifiedChatHistory }),
       signal: controller.signal,
     }).catch(error => {
+      console.error('Network error:', error);
+      if (error.name === 'AbortError') {
+        throw new Error("Request timed out. The AI service is taking too long to respond.");
+      }
       throw new Error("Network error: Unable to connect to the server");
     });
+
+    // Clear the timeout since the request completed
+    clearTimeout(timeoutId);
 
     let data;
     try {
       data = await response.json();
+      console.log('API response:', data);
     } catch (error) {
+      console.error('Error parsing response:', error);
       throw new Error("Invalid response from server");
     }
 
     if (!response.ok) {
+      console.error('API error response:', data);
       throw new Error(data.error?.message || `Server error (${response.status})`);
     }
 
     if (!data.candidates?.[0]?.content?.parts?.[0]?.text) {
+      console.error('Invalid response format:', data);
       throw new Error("Invalid response format from AI service");
     }
 
     // Process the response text and display with typing effect
     const responseText = data.candidates[0].content.parts[0].text.replace(/\*\*([^\*]+)\*\*/g, "$1").trim();
-    typingEffect(responseText, textElement, botMsgDiv);
+
+    // Check if the response contains code blocks and format them
+    if (responseText.includes("```")) {
+      formatCodeBlocks(responseText, textElement, botMsgDiv);
+    } else {
+      typingEffect(responseText, textElement, botMsgDiv);
+    }
 
     chatHistory.push({ role: "model", parts: [{ text: responseText }] });
   } catch (error) {
-    textElement.textContent = error.name === "AbortError" ? "Response generation stopped." : error.message;
+    let errorMessage;
+    console.error("Error in generateResponse:", error);
+
+    // Check if it's an API response error
+    if (error.message.includes('429')) {
+      errorMessage = "You've reached the rate limit. Please wait a moment before sending another message.";
+      setTimeout(() => {
+        document.body.classList.remove("bot-responding");
+      }, 30000); // Wait 30 seconds before allowing new messages
+    } else if (error.message.includes('Network error')) {
+      errorMessage = "Unable to connect to the server. Please check your internet connection.";
+    } else if (error.message.includes('Invalid response')) {
+      errorMessage = "The AI service returned an invalid response. Please try again.";
+    } else if (error.message.includes('timed out')) {
+      errorMessage = "The request timed out. The AI service is taking too long to respond. Please try again with a simpler question.";
+    } else if (error.name === "AbortError") {
+      errorMessage = "Response generation stopped.";
+    } else if (error.message.includes('Server configuration error')) {
+      errorMessage = "The server is missing required configuration. Please contact the administrator.";
+    } else if (error.message.includes('Server error') || error.message.includes('500')) {
+      errorMessage = "The AI service encountered an error. Please try again later.";
+    } else {
+      errorMessage = "An error occurred. Please try again later.";
+      console.error("Chat error details:", error.message);
+    }
+
+    textElement.textContent = errorMessage;
     textElement.style.color = "var(--error-color)";
     botMsgDiv.classList.remove("loading");
     document.body.classList.remove("bot-responding");
 
-    // If API key error, show the modal
-    if (error.message.includes("API key")) {
-      setTimeout(() => apiKeyModal.classList.add("active"), 1500);
-    }
-
     scrollToBottom();
+
+    // Show a toast notification for the error
+    showNotification(errorMessage, "error");
   } finally {
     userData.file = {};
   }
 };
 
+// Add notification system
+function showNotification(message, type = "info") {
+  const notification = document.createElement("div");
+  notification.classList.add("notification", type);
+  notification.innerHTML = `
+    <span class="material-symbols-rounded">${type === "error" ? "error" : "info"}</span>
+    <p>${message}</p>
+  `;
+
+  document.body.appendChild(notification);
+
+  // Trigger animation
+  setTimeout(() => notification.classList.add("show"), 100);
+
+  // Remove after 5 seconds
+  setTimeout(() => {
+    notification.classList.remove("show");
+    setTimeout(() => notification.remove(), 300);
+  }, 5000);
+}
+
+// Throttle responses to prevent spamming
+const MIN_RESPONSE_DELAY = 1000; // Minimum delay between responses in ms
+let lastResponseTime = 0;
+
 // Handle the form submission
-const handleFormSubmit = (e) => {
+const handleFormSubmit = async (e) => {
   e.preventDefault();
   const userMessage = promptInput.value.trim();
   if (!userMessage || document.body.classList.contains("bot-responding")) return;
 
+  // Check if enough time has passed since last response
+  const now = Date.now();
+  const timeSinceLastResponse = now - lastResponseTime;
+  if (timeSinceLastResponse < MIN_RESPONSE_DELAY) {
+    showNotification("Please wait a moment before sending another message", "info");
+    return;
+  }
+
+  lastResponseTime = now;
   userData.message = userMessage;
   promptInput.value = "";
   document.body.classList.add("chats-active", "bot-responding");
@@ -345,7 +587,7 @@ const handleFormSubmit = (e) => {
   // Generate user message HTML with optional file attachment
   const userMsgHTML = `
     <p class="message-text"></p>
-    ${userData.file.data ? (userData.file.isImage ? `<img src="data:${userData.file.mime_type};base64,${userData.file.data}" class="img-attachment" />` : `<p class="file-attachment"><span class="material-symbols-rounded">description</span>${userData.file.fileName}</p>`) : ""}
+    ${userData.file.data ? (userData.file.isImage ? `<img src="data:${userData.file.mime_type};base64,${userData.file.data}" class="img-attachment" alt="User uploaded image" />` : `<p class="file-attachment"><span class="material-symbols-rounded">description</span>${userData.file.fileName}</p>`) : ""}
   `;
 
   const userMsgDiv = createMessageElement(userMsgHTML, "user-message");
@@ -353,35 +595,81 @@ const handleFormSubmit = (e) => {
   chatsContainer.appendChild(userMsgDiv);
   scrollToBottom();
 
-  setTimeout(() => {
-    // Generate bot message HTML and add in the chat container
-    const botMsgHTML = `<img class="avatar" src="/logo.jpeg" /> <p class="message-text">Just a sec...</p>`;
-    const botMsgDiv = createMessageElement(botMsgHTML, "bot-message", "loading");
-    chatsContainer.appendChild(botMsgDiv);
-    scrollToBottom();
-    generateResponse(botMsgDiv);
-  }, 600); // 600 ms delay
+  // Add a small delay before showing bot response
+  await new Promise(resolve => setTimeout(resolve, 600));
+
+  // Generate bot message HTML and add in the chat container
+  const botMsgHTML = `<img class="avatar" src="/logo.jpeg" alt="HammadGenie" /> <p class="message-text">Just a sec...</p>`;
+  const botMsgDiv = createMessageElement(botMsgHTML, "bot-message", "loading");
+  chatsContainer.appendChild(botMsgDiv);
+  scrollToBottom();
+  generateResponse(botMsgDiv);
 };
 
-// Handle file input change (file upload)
+// File upload handling with progress
 fileInput.addEventListener("change", () => {
   const file = fileInput.files[0];
   if (!file) return;
 
   const isImage = file.type.startsWith("image/");
+  const maxSize = 5 * 1024 * 1024; // 5MB limit
+
+  if (file.size > maxSize) {
+    showNotification("File size should not exceed 5MB", "error");
+    fileInput.value = "";
+    return;
+  }
+
+  // Show upload progress notification
+  const progressNotification = document.createElement("div");
+  progressNotification.classList.add("notification", "progress");
+  progressNotification.innerHTML = `
+    <span class="material-symbols-rounded">cloud_upload</span>
+    <div class="progress-content">
+      <p>Uploading ${file.name}</p>
+      <div class="progress-bar">
+        <div class="progress-fill"></div>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(progressNotification);
+  setTimeout(() => progressNotification.classList.add("show"), 100);
+
   const reader = new FileReader();
   reader.readAsDataURL(file);
+
+  // Track upload progress
+  reader.onprogress = (event) => {
+    if (event.lengthComputable) {
+      const progress = (event.loaded / event.total) * 100;
+      progressNotification.querySelector(".progress-fill").style.width = `${progress}%`;
+    }
+  };
 
   reader.onload = (e) => {
     fileInput.value = "";
     const base64String = e.target.result.split(",")[1];
 
+    // Show completion and remove progress notification
+    progressNotification.classList.remove("show");
+    setTimeout(() => progressNotification.remove(), 300);
+
+    // Show success notification
+    showNotification(`${file.name} uploaded successfully`, "success");
+
     // Show file selected indicator
     attachmentBtn.style.backgroundColor = "var(--accent-color)";
     attachmentBtn.style.color = "white";
 
-    // Store file data in userData obj
+    // Store file data
     userData.file = { fileName: file.name, data: base64String, mime_type: file.type, isImage };
+  };
+
+  reader.onerror = () => {
+    progressNotification.classList.remove("show");
+    setTimeout(() => progressNotification.remove(), 300);
+    showNotification("Error uploading file", "error");
+    fileInput.value = "";
   };
 });
 
@@ -549,4 +837,50 @@ if (isMobile) {
       }
     }, { passive: false });
   }
+
+  // Keyboard handling for mobile devices
+  function handleKeyboardVisibility() {
+    const visualViewport = window.visualViewport;
+
+    if (visualViewport) {
+      visualViewport.addEventListener('resize', () => {
+        const isKeyboardOpen = visualViewport.height < window.innerHeight;
+        document.body.classList.toggle('keyboard-open', isKeyboardOpen);
+
+        if (isKeyboardOpen) {
+          // Scroll to input when keyboard opens
+          setTimeout(() => {
+            promptInput.scrollIntoView({ behavior: 'smooth' });
+          }, 100);
+        }
+      });
+    }
+
+    // Handle input focus
+    promptInput.addEventListener('focus', () => {
+      document.body.classList.add('keyboard-open');
+      setTimeout(() => {
+        window.scrollTo(0, document.body.scrollHeight);
+      }, 100);
+    });
+
+    promptInput.addEventListener('blur', () => {
+      document.body.classList.remove('keyboard-open');
+    });
+  }
+
+  // Initialize keyboard handling
+  handleKeyboardVisibility();
+
+  // Prevent zoom on double tap for iOS
+  let lastTapTime = 0;
+  document.addEventListener('touchend', (e) => {
+    const currentTime = new Date().getTime();
+    const tapLength = currentTime - lastTapTime;
+
+    if (tapLength < 500 && tapLength > 0) {
+      e.preventDefault();
+    }
+    lastTapTime = currentTime;
+  });
 }

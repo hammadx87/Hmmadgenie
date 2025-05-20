@@ -4,17 +4,12 @@
 
 [dev]
   framework = "#static"
-  port = 9999
+  port = 8888
   publish = "."
   functions = "netlify/functions"
   autoLaunch = true
 
 [[redirects]]
-  from = "/*"
-  to = "/index.html"
-  status = 200
-
-[[redirects]]
   from = "/api/*"
   to = "/.netlify/functions/:splat"
   status = 200
@@ -24,12 +19,9 @@
   from = "/*"
   to = "/index.html"
   status = 200
-
-[[redirects]]
-  from = "/api/*"
-  to = "/.netlify/functions/:splat"
-  status = 200
-  force = true
 
 [functions]
   node_bundler = "esbuild"
+
+[functions.chat]
+  timeout = 30
