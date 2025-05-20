@@ -222,148 +222,73 @@ const stopSpeech = () => {
 
 // Format code blocks in the response
 const formatCodeBlocks = (text, textElement, botMsgDiv) => {
-  textElement.textContent = "";
+  textElement.innerHTML = ""; // Use innerHTML instead of textContent
   botMsgDiv.classList.remove("loading");
 
-  // More robust regex to match code blocks with potential whitespace around backticks
-  const codeBlockRegex = /(\s*```[\s\S]*?```\s*)/g;
+  // More robust regex to match code blocks with language
+  const parts = text.split(/(```(?:[\w-]+)?\n[\s\S]*?```)/g);
 
-  // Split the text by code blocks
-  const parts = text.split(codeBlockRegex).filter(part => part !== '');
+  for (const part of parts) {
+    if (part.startsWith('```')) {
+      // This is a code block
+      const match = part.match(/```([\w-]+)?\n([\s\S]*?)```/);
+      if (match) {
+        const [_, language = 'javascript', code] = match;
 
-  for (let i = 0; i < parts.length; i++) {
-    const part = parts[i].trim();
+        // Create container for code block
+        const codeContainer = document.createElement('div');
+        codeContainer.className = 'code-container';
 
-    // Check if this part contains a code block (more robust check)
-    if (part.match(/^\s*```[\s\S]*?```\s*$/)) {
-      // Extract the content between the backticks, trimming any whitespace
-      const codeContent = part.replace(/^\s*```/, '').replace(/```\s*$/, '').trim();
-      const firstLineBreak = codeContent.indexOf('\n');
+        // Create header
+        const codeHeader = document.createElement('div');
+        codeHeader.className = 'code-header';
 
-      // Check if there's a language specified
-      let language = 'javascript'; // Default language
-      let code = codeContent;
+        // Add language indicator
+        const langIndicator = document.createElement('div');
+        langIndicator.className = 'code-language';
+        langIndicator.textContent = language;
+        codeHeader.appendChild(langIndicator);
 
-      if (firstLineBreak > 0) {
-        const possibleLang = codeContent.slice(0, firstLineBreak).trim();
-        if (possibleLang && !possibleLang.includes(' ')) {
-          language = possibleLang;
-          code = codeContent.slice(firstLineBreak + 1).trim();
-        }
-      }
+        // Add copy button
+        const copyButton = document.createElement('button');
+        copyButton.className = 'copy-button';
+        copyButton.innerHTML = '<span class="material-symbols-rounded">content_copy</span> Copy';
+        copyButton.addEventListener('click', () => {
+          navigator.clipboard.writeText(code).then(() => {
+            copyButton.innerHTML = '<span class="material-symbols-rounded">check</span> Copied';
+            setTimeout(() => {
+              copyButton.innerHTML = '<span class="material-symbols-rounded">content_copy</span> Copy';
+            }, 2000);
+          });
+        });
+        codeHeader.appendChild(copyButton);
 
-      // Create container for code block
-      const codeContainer = document.createElement('div');
-      codeContainer.className = 'code-container';
+        // Add header to container
+        codeContainer.appendChild(codeHeader);
 
-      // Create header with language indicator and copy button
-      const codeHeader = document.createElement('div');
-      codeHeader.className = 'code-header';
+        // Create code block
+        const codeBlock = document.createElement('div');
+        codeBlock.className = 'code-block';
 
-      // Add language indicator
-      const langIndicator = document.createElement('div');
-      langIndicator.className = 'code-language';
-      langIndicator.textContent = language;
-      codeHeader.appendChild(langIndicator);
-
-      // Add copy button with simpler implementation
-      const copyButton = document.createElement('button');
-      copyButton.className = 'copy-button';
-      copyButton.innerHTML = '<span class="material-symbols-rounded">content_copy</span> Copy';
-      copyButton.addEventListener('click', function() {
-        // Create a temporary textarea element to copy the code
-        const textarea = document.createElement('textarea');
-        textarea.value = code;
-        document.body.appendChild(textarea);
-        textarea.select();
-        document.execCommand('copy');
-        document.body.removeChild(textarea);
-
-        // Show copied state
-        copyButton.innerHTML = '<span class="material-symbols-rounded">check</span> Copied';
-
-        // Reset after 2 seconds
-        setTimeout(() => {
-          copyButton.innerHTML = '<span class="material-symbols-rounded">content_copy</span> Copy';
-        }, 2000);
-      });
-      codeHeader.appendChild(copyButton);
-
-      // Add header to container
-      codeContainer.appendChild(codeHeader);
-
-      // Create code block
-      const codeBlock = document.createElement('div');
-      codeBlock.className = 'code-block';
-
-      // Apply syntax highlighting based on language
-      if (language === 'html') {
-        code = highlightHTML(code);
-      } else if (language === 'css') {
-        code = highlightCSS(code);
-      } else if (language === 'javascript' || language === 'js') {
-        code = highlightJS(code);
-      } else {
-        // For other languages, just add the code as is
-        codeBlock.textContent = code;
-      }
-
-      if (language === 'html' || language === 'css' || language === 'javascript' || language === 'js') {
-        codeBlock.innerHTML = code;
-      }
-
-      // Add code block to container
-      codeContainer.appendChild(codeBlock);
-
-      // Add container to message
-      textElement.appendChild(codeContainer);
-
-      // Check if the next part is an explanation
-      if (i + 1 < parts.length && parts[i + 1].trim().startsWith("Explanation:")) {
-        const explanationText = parts[i + 1].trim();
-
-        // Create explanation container
-        const explanationContainer = document.createElement('div');
-        explanationContainer.className = 'explanation';
-
-        // Process explanation text
-        const explanationLines = explanationText.split('\n');
-
-        // Add "Explanation:" header
-        const explanationHeader = document.createElement('div');
-        explanationHeader.textContent = explanationLines[0]; // "Explanation:"
-        explanationContainer.appendChild(explanationHeader);
-
-        // Process bullet points
-        for (let j = 1; j < explanationLines.length; j++) {
-          const line = explanationLines[j].trim();
-          if (line.startsWith('*') || line.startsWith('•')) {
-            const explanationItem = document.createElement('div');
-            explanationItem.className = 'explanation-item';
-            explanationItem.textContent = line.substring(1).trim();
-            explanationContainer.appendChild(explanationItem);
-          } else if (line) {
-            // Regular text line
-            const textLine = document.createElement('div');
-            textLine.textContent = line;
-            explanationContainer.appendChild(textLine);
-          }
+        // Apply syntax highlighting based on language
+        let highlightedCode = code;
+        if (language === 'html') {
+          highlightedCode = highlightHTML(code);
+        } else if (language === 'css') {
+          highlightedCode = highlightCSS(code);
+        } else if (language === 'javascript' || language === 'js') {
+          highlightedCode = highlightJS(code);
         }
 
-        // Add explanation to container
-        codeContainer.appendChild(explanationContainer);
-
-        // Skip the explanation part in the next iteration
-        i++;
+        codeBlock.innerHTML = highlightedCode;
+        codeContainer.appendChild(codeBlock);
+        textElement.appendChild(codeContainer);
       }
-    } else {
-      // Check if this is an explanation that should be skipped
-      if (!part.trim().startsWith("Explanation:")) {
-        // This is regular text
-        const textNode = document.createElement('span');
-        textNode.textContent = part;
-        textElement.appendChild(textNode);
-      }
+    } else if (part.trim()) {
+      // This is regular text
+      const textNode = document.createElement('span');
+      textNode.textContent = part;
+      textElement.appendChild(textNode);
     }
   }
 
