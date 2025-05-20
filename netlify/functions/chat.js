@@ -1,8 +1,17 @@
 const fetch = require('node-fetch');
 
 // Load environment variables
-if (process.env.NODE_ENV !== 'production') {
-  require('dotenv').config({ path: '../../.env' });
+// In development, load from .env file
+// In production, Netlify will provide the environment variables
+try {
+  if (process.env.NODE_ENV !== 'production') {
+    require('dotenv').config({ path: '../../.env' });
+  }
+
+  // Log environment status but not the actual key
+  console.log('Environment check: GEMINI_API_KEY is', process.env.GEMINI_API_KEY ? 'set' : 'NOT SET');
+} catch (error) {
+  console.error('Error loading environment variables:', error);
 }
 
 // Rate limiting setup
@@ -106,7 +115,12 @@ exports.handler = async function(event, context) {
       return {
         statusCode: 500,
         headers,
-        body: JSON.stringify({ error: { message: 'Server configuration error' } })
+        body: JSON.stringify({
+          error: {
+            message: 'Server configuration error: Missing API key',
+            details: 'The GEMINI_API_KEY environment variable is not set. Please configure it in Netlify environment variables.'
+          }
+        })
       };
     }
 

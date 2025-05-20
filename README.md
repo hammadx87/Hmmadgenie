@@ -75,6 +75,23 @@ Netlify will automatically deploy changes pushed to the main branch.
 Required environment variables:
 - `GEMINI_API_KEY`: Your Google Gemini API key
 
+### Setting up Environment Variables in Netlify
+
+For the application to work properly when deployed to Netlify, you must set up the environment variables in the Netlify dashboard:
+
+1. Go to your Netlify site dashboard
+2. Navigate to Site settings > Environment variables
+3. Click "Add variable"
+4. Enter `GEMINI_API_KEY` as the key and your API key as the value
+5. Make sure to set this for both production and branch deploys
+6. Click "Save"
+7. Redeploy your site to apply the changes
+
+If you encounter issues with the API key not being recognized:
+- Verify that the environment variable is correctly set in Netlify
+- Check the function logs in Netlify for any errors
+- Try redeploying the site after setting the environment variable
+
 ## Technologies Used
 
 - Vanilla JavaScript
