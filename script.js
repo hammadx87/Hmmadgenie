@@ -379,118 +379,155 @@ const formatCodeBlocks = (text, textElement, botMsgDiv) => {
   scrollToBottom();
 };
 
-// Custom syntax highlighter for HTML
+// SIMPLIFIED syntax highlighters for production environment
+
+// Simple syntax highlighter for HTML
 function highlightHTML(code) {
   try {
-    // Escape HTML entities if not already escaped
-    if (code.indexOf('&lt;') === -1) {
-      code = code.replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    console.log("[PRODUCTION] Highlighting HTML code");
+
+    // Make sure HTML entities are escaped
+    code = code.replace(/</g, '&lt;').replace(/>/g, '&gt;');
+
+    // Create a temporary div to hold the highlighted code
+    let result = '';
+
+    // Split the code into lines for easier processing
+    const lines = code.split('\n');
+
+    for (let i = 0; i < lines.length; i++) {
+      let line = lines[i];
+
+      // Handle indentation
+      const indentMatch = line.match(/^(\s+)/);
+      const indent = indentMatch ? indentMatch[0].replace(/ /g, '&nbsp;') : '';
+
+      if (indent) {
+        line = line.substring(indent.length);
+      }
+
+      // Highlight tags
+      line = line.replace(/(&lt;)(!DOCTYPE\s+html)(&gt;)/gi,
+                          '$1<span class="code-doctype">$2</span>$3');
+
+      line = line.replace(/(&lt;)(\/?)([\w\-]+)(.*?)(&gt;)/g,
+                          '$1<span class="code-tag">$2$3</span>$4$5');
+
+      // Highlight attributes
+      line = line.replace(/(\s+)([\w\-]+)(\s*=\s*)("[^"]*"|'[^']*')/g,
+                          '$1<span class="code-property">$2</span>$3<span class="code-string">$4</span>');
+
+      // Add the processed line to the result
+      result += indent + line + '\n';
     }
 
-    // Replace DOCTYPE
-    code = code.replace(/(&lt;)(!DOCTYPE\s+html)(&gt;)/gi, function(_, open, doctype, close) {
-      return `${open}<span class="code-doctype">${doctype}</span>${close}`;
-    });
-
-    // Replace HTML tags
-    code = code.replace(/(&lt;)(\/?)([\w\-]+)(.*?)(&gt;)/g, function(_, open, slash, tag, attrs, close) {
-      return `${open}<span class="code-tag">${slash}${tag}</span>${attrs}${close}`;
-    });
-
-    // Replace attributes
-    code = code.replace(/(\s+)([\w\-]+)(\s*=\s*)("[^"]*"|'[^']*')/g, function(_, space, attr, equals, value) {
-      return `${space}<span class="code-property">${attr}</span>${equals}<span class="code-string">${value}</span>`;
-    });
-
-    // Add indentation
-    code = code.replace(/^(\s*)(.+)$/gm, function(_, indent, content) {
-      // Replace spaces with non-breaking spaces for proper indentation
-      const nbspIndent = indent.replace(/ /g, '&nbsp;');
-      return nbspIndent + content;
-    });
-
-    return code;
+    return result;
   } catch (e) {
-    console.error("Error in highlightHTML:", e);
-    // Return the original code if highlighting fails
+    console.error("[PRODUCTION] Error in highlightHTML:", e);
+    // Return safely escaped code
     return code.replace(/</g, '&lt;').replace(/>/g, '&gt;');
   }
 }
 
-// Custom syntax highlighter for CSS
+// Simple syntax highlighter for CSS
 function highlightCSS(code) {
   try {
-    // Escape HTML entities if not already escaped
-    if (code.indexOf('&lt;') === -1) {
-      code = code.replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    console.log("[PRODUCTION] Highlighting CSS code");
+
+    // Make sure HTML entities are escaped
+    code = code.replace(/</g, '&lt;').replace(/>/g, '&gt;');
+
+    // Create a temporary div to hold the highlighted code
+    let result = '';
+
+    // Split the code into lines for easier processing
+    const lines = code.split('\n');
+
+    for (let i = 0; i < lines.length; i++) {
+      let line = lines[i];
+
+      // Handle indentation
+      const indentMatch = line.match(/^(\s+)/);
+      const indent = indentMatch ? indentMatch[0].replace(/ /g, '&nbsp;') : '';
+
+      if (indent) {
+        line = line.substring(indent.length);
+      }
+
+      // Highlight selectors
+      line = line.replace(/([\.\#]?[\w\-]+)(\s*\{)/g,
+                          '<span class="code-selector">$1</span>$2');
+
+      // Highlight properties and values
+      line = line.replace(/(\s+)([\w\-]+)(\s*:\s*)([^;]+)(;?)/g,
+                          '$1<span class="code-property">$2</span>$3<span class="code-value">$4</span>$5');
+
+      // Highlight comments
+      line = line.replace(/(\/\*[\s\S]*?\*\/)/g,
+                          '<span class="code-comment">$1</span>');
+
+      // Add the processed line to the result
+      result += indent + line + '\n';
     }
 
-    // Replace CSS selectors
-    code = code.replace(/([\.\#]?[\w\-]+)(\s*\{)/g, function(_, selector, brace) {
-      return `<span class="code-selector">${selector}</span>${brace}`;
-    });
-
-    // Replace CSS properties
-    code = code.replace(/(\s+)([\w\-]+)(\s*:\s*)([^;]+)(;?)/g, function(_, space, prop, colon, value, semicolon) {
-      return `${space}<span class="code-property">${prop}</span>${colon}<span class="code-value">${value}</span>${semicolon}`;
-    });
-
-    // Replace CSS comments
-    code = code.replace(/(\/\*[\s\S]*?\*\/)/g, '<span class="code-comment">$1</span>');
-
-    // Add indentation
-    code = code.replace(/^(\s*)(.+)$/gm, function(_, indent, content) {
-      // Replace spaces with non-breaking spaces for proper indentation
-      const nbspIndent = indent.replace(/ /g, '&nbsp;');
-      return nbspIndent + content;
-    });
-
-    return code;
+    return result;
   } catch (e) {
-    console.error("Error in highlightCSS:", e);
-    // Return the original code if highlighting fails
+    console.error("[PRODUCTION] Error in highlightCSS:", e);
+    // Return safely escaped code
     return code.replace(/</g, '&lt;').replace(/>/g, '&gt;');
   }
 }
 
-// Custom syntax highlighter for JavaScript
+// Simple syntax highlighter for JavaScript
 function highlightJS(code) {
   try {
-    // Escape HTML entities if not already escaped
-    if (code.indexOf('&lt;') === -1) {
-      code = code.replace(/</g, '&lt;').replace(/>/g, '&gt;');
-    }
+    console.log("[PRODUCTION] Highlighting JavaScript code");
 
-    // Replace JavaScript keywords
+    // Make sure HTML entities are escaped
+    code = code.replace(/</g, '&lt;').replace(/>/g, '&gt;');
+
+    // Create a temporary div to hold the highlighted code
+    let result = '';
+
+    // Split the code into lines for easier processing
+    const lines = code.split('\n');
+
+    // Define keywords to highlight
     const keywords = ['var', 'let', 'const', 'function', 'return', 'if', 'else', 'for', 'while', 'class', 'new', 'this', 'import', 'export', 'from', 'try', 'catch', 'throw', 'async', 'await', 'break', 'case', 'continue', 'default', 'do', 'extends', 'instanceof', 'switch', 'typeof'];
 
-    // Use a safer approach to replace keywords
-    let highlightedCode = code;
-    keywords.forEach(keyword => {
-      const regex = new RegExp(`\\b${keyword}\\b`, 'g');
-      highlightedCode = highlightedCode.replace(regex, `<span class="code-keyword">${keyword}</span>`);
-    });
+    for (let i = 0; i < lines.length; i++) {
+      let line = lines[i];
 
-    // Replace strings - be more careful with regex
-    highlightedCode = highlightedCode.replace(/("(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*'|`(?:\\.|[^`\\])*`)/g, '<span class="code-string">$1</span>');
+      // Handle indentation
+      const indentMatch = line.match(/^(\s+)/);
+      const indent = indentMatch ? indentMatch[0].replace(/ /g, '&nbsp;') : '';
 
-    // Replace single-line comments
-    highlightedCode = highlightedCode.replace(/(\/\/[^\n]*)/g, '<span class="code-comment">$1</span>');
+      if (indent) {
+        line = line.substring(indent.length);
+      }
 
-    // Replace multi-line comments
-    highlightedCode = highlightedCode.replace(/(\/\*[\s\S]*?\*\/)/g, '<span class="code-comment">$1</span>');
+      // Highlight strings first (to avoid conflicts with other patterns)
+      line = line.replace(/("(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*'|`(?:\\.|[^`\\])*`)/g,
+                          '<span class="code-string">$1</span>');
 
-    // Add indentation
-    highlightedCode = highlightedCode.replace(/^(\s*)(.+)$/gm, function(_, indent, content) {
-      // Replace spaces with non-breaking spaces for proper indentation
-      const nbspIndent = indent.replace(/ /g, '&nbsp;');
-      return nbspIndent + content;
-    });
+      // Highlight comments
+      line = line.replace(/(\/\/.*$)/g,
+                          '<span class="code-comment">$1</span>');
 
-    return highlightedCode;
+      // Highlight keywords (only if they're not already inside a span)
+      for (const keyword of keywords) {
+        const regex = new RegExp(`\\b${keyword}\\b(?![^<]*>)`, 'g');
+        line = line.replace(regex, `<span class="code-keyword">${keyword}</span>`);
+      }
+
+      // Add the processed line to the result
+      result += indent + line + '\n';
+    }
+
+    return result;
   } catch (e) {
-    console.error("Error in highlightJS:", e);
-    // Return the original code if highlighting fails
+    console.error("[PRODUCTION] Error in highlightJS:", e);
+    // Return safely escaped code
     return code.replace(/</g, '&lt;').replace(/>/g, '&gt;');
   }
 }
