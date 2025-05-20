@@ -225,69 +225,124 @@ const formatCodeBlocks = (text, textElement, botMsgDiv) => {
   textElement.innerHTML = ""; // Use innerHTML instead of textContent
   botMsgDiv.classList.remove("loading");
 
-  // More robust regex to match code blocks with language
-  const parts = text.split(/(```(?:[\w-]+)?\n[\s\S]*?```)/g);
+  // More robust regex to match code blocks with or without language specification
+  // This pattern handles various formats that might come from different AI models
+  const codeBlockRegex = /```([\w-]*)?(?:\s*\n)([\s\S]*?)```/g;
 
-  for (const part of parts) {
-    if (part.startsWith('```')) {
-      // This is a code block
-      const match = part.match(/```([\w-]+)?\n([\s\S]*?)```/);
-      if (match) {
-        const [_, language = 'javascript', code] = match;
+  let lastIndex = 0;
+  let match;
 
-        // Create container for code block
-        const codeContainer = document.createElement('div');
-        codeContainer.className = 'code-container';
+  // Process each code block found in the text
+  while ((match = codeBlockRegex.exec(text)) !== null) {
+    // Add any text before this code block
+    if (match.index > lastIndex) {
+      const textBefore = text.substring(lastIndex, match.index);
+      if (textBefore.trim()) {
+        const textNode = document.createElement('span');
+        textNode.textContent = textBefore;
+        textElement.appendChild(textNode);
+      }
+    }
 
-        // Create header
-        const codeHeader = document.createElement('div');
-        codeHeader.className = 'code-header';
+    // Extract language and code
+    const language = match[1]?.trim() || 'javascript'; // Default to JavaScript if no language specified
+    const code = match[2].trim();
 
-        // Add language indicator
-        const langIndicator = document.createElement('div');
-        langIndicator.className = 'code-language';
-        langIndicator.textContent = language;
-        codeHeader.appendChild(langIndicator);
+    // Create container for code block
+    const codeContainer = document.createElement('div');
+    codeContainer.className = 'code-container';
 
-        // Add copy button
-        const copyButton = document.createElement('button');
-        copyButton.className = 'copy-button';
-        copyButton.innerHTML = '<span class="material-symbols-rounded">content_copy</span> Copy';
-        copyButton.addEventListener('click', () => {
-          navigator.clipboard.writeText(code).then(() => {
+    // Create header
+    const codeHeader = document.createElement('div');
+    codeHeader.className = 'code-header';
+
+    // Add language indicator
+    const langIndicator = document.createElement('div');
+    langIndicator.className = 'code-language';
+    langIndicator.textContent = language;
+    codeHeader.appendChild(langIndicator);
+
+    // Add copy button
+    const copyButton = document.createElement('button');
+    copyButton.className = 'copy-button';
+    copyButton.innerHTML = '<span class="material-symbols-rounded">content_copy</span> Copy';
+
+    // Use modern clipboard API with fallback
+    copyButton.addEventListener('click', () => {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(code)
+          .then(() => {
+            copyButton.innerHTML = '<span class="material-symbols-rounded">check</span> Copied';
+            setTimeout(() => {
+              copyButton.innerHTML = '<span class="material-symbols-rounded">content_copy</span> Copy';
+            }, 2000);
+          })
+          .catch(err => {
+            console.error('Failed to copy: ', err);
+            // Fallback to older method
+            const textarea = document.createElement('textarea');
+            textarea.value = code;
+            textarea.style.position = 'fixed';
+            document.body.appendChild(textarea);
+            textarea.select();
+            document.execCommand('copy');
+            document.body.removeChild(textarea);
+
             copyButton.innerHTML = '<span class="material-symbols-rounded">check</span> Copied';
             setTimeout(() => {
               copyButton.innerHTML = '<span class="material-symbols-rounded">content_copy</span> Copy';
             }, 2000);
           });
-        });
-        codeHeader.appendChild(copyButton);
+      } else {
+        // Fallback for browsers without clipboard API
+        const textarea = document.createElement('textarea');
+        textarea.value = code;
+        textarea.style.position = 'fixed';
+        document.body.appendChild(textarea);
+        textarea.select();
+        document.execCommand('copy');
+        document.body.removeChild(textarea);
 
-        // Add header to container
-        codeContainer.appendChild(codeHeader);
-
-        // Create code block
-        const codeBlock = document.createElement('div');
-        codeBlock.className = 'code-block';
-
-        // Apply syntax highlighting based on language
-        let highlightedCode = code;
-        if (language === 'html') {
-          highlightedCode = highlightHTML(code);
-        } else if (language === 'css') {
-          highlightedCode = highlightCSS(code);
-        } else if (language === 'javascript' || language === 'js') {
-          highlightedCode = highlightJS(code);
-        }
-
-        codeBlock.innerHTML = highlightedCode;
-        codeContainer.appendChild(codeBlock);
-        textElement.appendChild(codeContainer);
+        copyButton.innerHTML = '<span class="material-symbols-rounded">check</span> Copied';
+        setTimeout(() => {
+          copyButton.innerHTML = '<span class="material-symbols-rounded">content_copy</span> Copy';
+        }, 2000);
       }
-    } else if (part.trim()) {
-      // This is regular text
+    });
+
+    codeHeader.appendChild(copyButton);
+
+    // Add header to container
+    codeContainer.appendChild(codeHeader);
+
+    // Create code block
+    const codeBlock = document.createElement('div');
+    codeBlock.className = 'code-block';
+
+    // Apply syntax highlighting based on language
+    let highlightedCode = code;
+    if (language === 'html') {
+      highlightedCode = highlightHTML(code);
+    } else if (language === 'css') {
+      highlightedCode = highlightCSS(code);
+    } else if (language === 'javascript' || language === 'js') {
+      highlightedCode = highlightJS(code);
+    }
+
+    codeBlock.innerHTML = highlightedCode;
+    codeContainer.appendChild(codeBlock);
+    textElement.appendChild(codeContainer);
+
+    // Update lastIndex to after this code block
+    lastIndex = codeBlockRegex.lastIndex;
+  }
+
+  // Add any remaining text after the last code block
+  if (lastIndex < text.length) {
+    const textAfter = text.substring(lastIndex);
+    if (textAfter.trim()) {
       const textNode = document.createElement('span');
-      textNode.textContent = part;
+      textNode.textContent = textAfter;
       textElement.appendChild(textNode);
     }
   }
