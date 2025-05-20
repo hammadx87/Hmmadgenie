@@ -317,11 +317,53 @@ const formatCodeBlocks = (text, textElement, botMsgDiv) => {
 
       // Add container to message
       textElement.appendChild(codeContainer);
+
+      // Check if the next part is an explanation
+      if (i + 1 < parts.length && parts[i + 1].trim().startsWith("Explanation:")) {
+        const explanationText = parts[i + 1].trim();
+
+        // Create explanation container
+        const explanationContainer = document.createElement('div');
+        explanationContainer.className = 'explanation';
+
+        // Process explanation text
+        const explanationLines = explanationText.split('\n');
+
+        // Add "Explanation:" header
+        const explanationHeader = document.createElement('div');
+        explanationHeader.textContent = explanationLines[0]; // "Explanation:"
+        explanationContainer.appendChild(explanationHeader);
+
+        // Process bullet points
+        for (let j = 1; j < explanationLines.length; j++) {
+          const line = explanationLines[j].trim();
+          if (line.startsWith('*') || line.startsWith('•')) {
+            const explanationItem = document.createElement('div');
+            explanationItem.className = 'explanation-item';
+            explanationItem.textContent = line.substring(1).trim();
+            explanationContainer.appendChild(explanationItem);
+          } else if (line) {
+            // Regular text line
+            const textLine = document.createElement('div');
+            textLine.textContent = line;
+            explanationContainer.appendChild(textLine);
+          }
+        }
+
+        // Add explanation to container
+        codeContainer.appendChild(explanationContainer);
+
+        // Skip the explanation part in the next iteration
+        i++;
+      }
     } else {
-      // This is regular text
-      const textNode = document.createElement('span');
-      textNode.textContent = part;
-      textElement.appendChild(textNode);
+      // Check if this is an explanation that should be skipped
+      if (!part.trim().startsWith("Explanation:")) {
+        // This is regular text
+        const textNode = document.createElement('span');
+        textNode.textContent = part;
+        textElement.appendChild(textNode);
+      }
     }
   }
 
@@ -344,6 +386,13 @@ function highlightHTML(code) {
   // Replace attributes
   code = code.replace(/(\s+)([\w\-]+)(\s*=\s*)("[^"]*"|'[^']*')/g, function(_, space, attr, equals, value) {
     return `${space}<span class="code-property">${attr}</span>${equals}<span class="code-string">${value}</span>`;
+  });
+
+  // Add indentation
+  code = code.replace(/^(\s*)(.+)$/gm, function(_, indent, content) {
+    // Replace spaces with non-breaking spaces for proper indentation
+    const nbspIndent = indent.replace(/ /g, '&nbsp;');
+    return nbspIndent + content;
   });
 
   return code;

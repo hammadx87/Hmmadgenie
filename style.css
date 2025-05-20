@@ -370,7 +370,7 @@ body.keyboard-open .container .prompt-container {
   margin: 10px 0;
   border-radius: 0;
   overflow: hidden;
-  background: #1e1e1e;
+  background: #0d1117;
   font-family: Consolas, Monaco, 'Andale Mono', 'Ubuntu Mono', monospace;
 }
 
@@ -379,7 +379,7 @@ body.keyboard-open .container .prompt-container {
   justify-content: space-between;
   align-items: center;
   padding: 8px 12px;
-  background: #1e1e1e;
+  background: #0d1117;
   border-bottom: none;
 }
 
@@ -387,6 +387,11 @@ body.keyboard-open .container .prompt-container {
   color: #858585;
   font-size: 13px;
   font-family: Consolas, Monaco, 'Andale Mono', 'Ubuntu Mono', monospace;
+}
+
+.code-language::before {
+  content: "~";
+  margin-right: 2px;
 }
 
 .copy-button {
@@ -413,7 +418,7 @@ body.keyboard-open .container .prompt-container {
 
 .code-block {
   padding: 0 16px 16px;
-  background: #1e1e1e;
+  background: #0d1117;
   font-family: Consolas, Monaco, 'Andale Mono', 'Ubuntu Mono', monospace;
   font-size: 14px;
   line-height: 1.5;
@@ -423,34 +428,53 @@ body.keyboard-open .container .prompt-container {
   margin: 0;
 }
 
-/* Syntax highlighting - VS Code dark theme colors */
+/* Explanation styling */
+.explanation {
+  margin-top: 16px;
+  color: #d4d4d4;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.explanation-item {
+  margin-bottom: 8px;
+  display: flex;
+}
+
+.explanation-item::before {
+  content: "•";
+  color: #4CAFF0;
+  margin-right: 8px;
+}
+
+/* Syntax highlighting - Custom colors to match screenshot */
 .code-keyword {
-  color: #569cd6; /* blue */
+  color: #ff7b72; /* red */
 }
 
 .code-tag {
-  color: #569cd6; /* blue */
+  color: #7ee787; /* green */
 }
 
 .code-selector {
-  color: #d7ba7d; /* gold */
+  color: #79c0ff; /* light blue */
 }
 
 .code-property {
-  color: #9cdcfe; /* light blue */
+  color: #79c0ff; /* light blue */
 }
 
 .code-string, .code-value {
-  color: #ce9178; /* orange/brown */
+  color: #a5d6ff; /* lighter blue */
 }
 
 .code-comment {
-  color: #6a9955; /* green */
+  color: #8b949e; /* gray */
 }
 
 /* HTML specific colors */
 .code-doctype {
-  color: #808080; /* gray */
+  color: #ff7b72; /* red */
 }
 
 /* Light theme adjustments for code blocks */
