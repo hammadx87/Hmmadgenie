@@ -1,9 +1,8 @@
 {
-  "name": "hammadgenie",
+  "name": "hammadgenie-functions",
   "version": "1.0.0",
-  "description": "HammadGenie AI Chatbot",
+  "description": "HammadGenie AI Chatbot Netlify Functions",
   "dependencies": {
-    "node-fetch": "^2.6.1",
-    "dotenv": "^16.0.3"
+    "node-fetch": "^2.6.1"
   }
 }
