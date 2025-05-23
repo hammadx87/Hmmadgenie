@@ -58,9 +58,8 @@ function handleCreatorQuestion(message) {
     /who are you made by/i,
     /who (is|are) you/i
   ];
-
   return creatorPatterns.some(pattern => pattern.test(message)) ?
-    "I am HammadGenie, created by Hammad x Code, a talented developer who built me to assist users like you." : null;
+    "I am PrognosisAI, created by Hammad x Code, a talented developer who built me to assist users like you." : null;
 }
 
 // Function to send automatic welcome message
@@ -68,10 +67,8 @@ function sendWelcomeMessage() {
   // Only send welcome message if no chats exist yet
   if (chatsContainer.children.length === 0) {
     // Add chats-active class to body
-    document.body.classList.add("chats-active");
-
-    // Create welcome message
-    const welcomeMessage = "Hello, I'm HammadGenie, developed by Hammad x Code! How can I assist you today?";
+    document.body.classList.add("chats-active");    // Create welcome message
+    const welcomeMessage = "Hello, I'm PrognosisAI, developed by Hammad x Code! How can I assist you today?";
     const botMsgHTML = `<img class="avatar" src="/logo.jpeg" /> <p class="message-text">${welcomeMessage}</p>`;
     const botMsgDiv = createMessageElement(botMsgHTML, "bot-message");
 

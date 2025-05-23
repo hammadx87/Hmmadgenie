@@ -1,4 +1,4 @@
-# HammadGenie AI Chatbot
+# PrognosisAI Chatbot
 
 An AI chatbot powered by Google's Gemini API, built with vanilla JavaScript and deployed on Netlify.
 

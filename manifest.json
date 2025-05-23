@@ -1,6 +1,6 @@
 {
-  "name": "HammadGenie",
-  "short_name": "HammadGenie",
+  "name": "PrognosisAI",
+  "short_name": "PrognosisAI",
   "description": "AI Assistant developed by Hammad x Code",
   "start_url": "/index.html",
   "display": "standalone",

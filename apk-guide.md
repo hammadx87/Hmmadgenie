@@ -1,6 +1,6 @@
-# Converting HammadGenie to an Android APK
+# Converting PrognosisAI to an Android APK
 
-This guide explains how to convert the HammadGenie web app into an Android APK file that can be installed on Android devices.
+This guide explains how to convert the PrognosisAI web app into an Android APK file that can be installed on Android devices.
 
 ## Prerequisites
 
@@ -52,7 +52,7 @@ For more control and native features:
 
 ```bash
 npm install @capacitor/core @capacitor/android
-npx cap init HammadGenie com.hammad.hammadgenie
+npx cap init PrognosisAI com.hammad.prognosisai
 ```
 
 ### Step 2: Add Android platform
