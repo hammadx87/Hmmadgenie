@@ -570,11 +570,14 @@ body.light-theme .copy-button {
   background: none;
   outline: none;
   border: none;
-  font-size: 16px; /* Fixed size to prevent zoom */
+  font-size: 16px !important; /* Fixed size to prevent zoom */
   color: var(--text-color);
   padding-left: 24px;
   -webkit-appearance: none; /* Prevent iOS styling */
   appearance: none;
+  -webkit-text-size-adjust: 100%;
+  transform: translateZ(0);
+  -webkit-transform: translateZ(0);
 }
 
 .prompt-form .prompt-input::placeholder {
@@ -1200,5 +1203,70 @@ body.recording #voice-input-btn {
   50% {
     transform: translateY(-50%) scale(1.4);
     opacity: 0.5;
+  }
+}
+
+/* Mobile input fixes */
+@media (max-width: 768px) {
+  .app-header {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 1000;
+    background: var(--primary-color);
+  }
+
+  .container {
+    padding-top: 130px; /* Adjust based on your header height */
+  }
+
+  .prompt-wrapper {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    padding: 10px;
+    background: var(--primary-color);
+    z-index: 1000;
+  }
+
+  .chats-container {
+    margin-bottom: 80px; /* Space for input area */
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+
+  /* Prevent iOS zoom */
+  .prompt-input {
+    font-size: 16px !important;
+    transform: translateZ(0);
+    -webkit-transform: translateZ(0);
+  }
+
+  /* Fix for iOS header */
+  @supports (-webkit-touch-callout: none) {
+    .app-header {
+      padding-top: env(safe-area-inset-top);
+    }
+  }
+
+  /* Fix for Android keyboard */
+  .keyboard-open .app-header {
+    position: absolute;
+  }
+
+  .keyboard-open .prompt-wrapper {
+    position: sticky;
+    bottom: 0;
+  }
+
+  /* Ensure content doesn't jump when keyboard opens */
+  body {
+    min-height: 100vh;
+    min-height: -webkit-fill-available;
+  }
+
+  html {
+    height: -webkit-fill-available;
   }
 }
