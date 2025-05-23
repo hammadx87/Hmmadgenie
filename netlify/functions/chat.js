@@ -4,12 +4,60 @@ const fetch = require('node-fetch');
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 if (!GEMINI_API_KEY) {
   console.error('CRITICAL ERROR: GEMINI_API_KEY environment variable is not set');
-  console.error('Please add GEMINI_API_KEY to your Netlify environment variables:');
-  console.error('Netlify Dashboard > Site Settings > Build & Deploy > Environment Variables');
 }
 
-// Note: Rate limiting has been removed as it's not effective in a serverless environment
-// For production rate limiting, consider using Netlify Edge Functions or a database/cache
+// Retry configuration
+const MAX_RETRIES = 3;
+const INITIAL_RETRY_DELAY = 1000; // 1 second
+
+// Helper function to wait
+const wait = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+
+// Helper function to make API request with retries
+async function makeGeminiRequest(requestData, retryCount = 0) {
+  try {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 seconds timeout
+
+    const response = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(requestData),
+        signal: controller.signal
+      }
+    );
+
+    clearTimeout(timeoutId);
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      console.error(`Gemini API Error (Attempt ${retryCount + 1}):`, response.status, JSON.stringify(errorData));
+      
+      // If we haven't exceeded max retries and it's a retryable error
+      if (retryCount < MAX_RETRIES && (response.status === 429 || response.status >= 500)) {
+        const delay = INITIAL_RETRY_DELAY * Math.pow(2, retryCount); // Exponential backoff
+        console.log(`Retrying in ${delay}ms...`);
+        await wait(delay);
+        return makeGeminiRequest(requestData, retryCount + 1);
+      }
+      
+      throw new Error(errorData.error?.message || `Gemini API error (${response.status})`);
+    }
+
+    return response;
+  } catch (error) {
+    if (error.name === 'AbortError') {
+      if (retryCount < MAX_RETRIES) {
+        console.log(`Request timeout (Attempt ${retryCount + 1}). Retrying...`);
+        return makeGeminiRequest(requestData, retryCount + 1);
+      }
+      throw new Error('All retry attempts timed out');
+    }
+    throw error;
+  }
+}
 
 exports.handler = async function(event) {
   const headers = {
@@ -54,21 +102,6 @@ exports.handler = async function(event) {
       };
     }
 
-    // Check for API key before proceeding
-    if (!GEMINI_API_KEY) {
-      console.error('Request failed: GEMINI_API_KEY is not set');
-      return {
-        statusCode: 500,
-        headers,
-        body: JSON.stringify({
-          error: {
-            message: 'Server configuration error: Missing API key',
-            details: 'The GEMINI_API_KEY environment variable is not set in Netlify. Please check deployment settings.'
-          }
-        })
-      };
-    }
-
     // Extract the latest user message
     const latestUserMessage = requestBody.contents[requestBody.contents.length - 1].parts[0].text;
     console.log('Processing request with message:', latestUserMessage.substring(0, 50) + (latestUserMessage.length > 50 ? '...' : ''));
@@ -97,117 +130,10 @@ exports.handler = async function(event) {
       ]
     };
 
-    // Make request to Gemini API with timeout
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 25000); // 25 seconds timeout
+    // Make request with retries
+    const response = await makeGeminiRequest(requestData);
+    const data = await response.json();
 
-    let response;
-    try {
-      console.log('Sending request to Gemini API...');
-      response = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`,
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(requestData),
-          signal: controller.signal
-        }
-      );
-      clearTimeout(timeoutId);
-    } catch (error) {
-      clearTimeout(timeoutId);
-      if (error.name === 'AbortError') {
-        throw new Error('Request to Gemini API timed out after 25 seconds');
-      }
-      throw error;
-    }
-
-    // Handle non-200 responses from Gemini API
-    if (!response.ok) {
-      let errorData;
-      try {
-        errorData = await response.json();
-        console.error('Gemini API Error:', response.status, JSON.stringify(errorData));
-
-        // Check specifically for API key issues
-        const errorMessage = errorData.error?.message || '';
-        const isApiKeyError =
-          errorMessage.includes('API key') ||
-          errorMessage.includes('apiKey') ||
-          errorMessage.includes('key not valid') ||
-          response.status === 403 ||
-          response.status === 401;
-
-        if (isApiKeyError) {
-          console.error('API KEY ERROR: The Gemini API key appears to be invalid or unauthorized');
-          console.error('Please check your API key in Netlify environment variables');
-          console.error('Get a new key from: https://makersuite.google.com/app/apikey');
-
-          return {
-            statusCode: response.status,
-            headers,
-            body: JSON.stringify({
-              error: {
-                message: 'API key not valid. Please pass a valid API key.',
-                status: response.status,
-                details: 'The API key for Gemini is invalid or unauthorized. Please contact the administrator to update the API key.'
-              }
-            })
-          };
-        }
-      } catch (e) {
-        console.error('Failed to parse error response:', e.message);
-        console.error('Response status:', response.status);
-        console.error('Response text:', await response.text().catch(() => 'Unable to get response text'));
-        errorData = { error: { message: 'Unknown error from Gemini API' } };
-      }
-
-      // Return appropriate error response
-      return {
-        statusCode: response.status,
-        headers,
-        body: JSON.stringify({
-          error: {
-            message: errorData.error?.message || `Error from Gemini API (${response.status})`,
-            status: response.status,
-            details: errorData.error?.details || 'No additional details available'
-          }
-        })
-      };
-    }
-
-    // Parse and validate Gemini API response
-    let data;
-    try {
-      data = await response.json();
-
-      // Validate response structure
-      if (!data.candidates || !data.candidates[0] || !data.candidates[0].content) {
-        console.error('Invalid response structure from Gemini API:', JSON.stringify(data));
-        return {
-          statusCode: 500,
-          headers,
-          body: JSON.stringify({
-            error: {
-              message: 'Invalid response structure from Gemini API',
-              details: 'The API response did not contain the expected data structure'
-            }
-          })
-        };
-      }
-    } catch (error) {
-      console.error('Error parsing Gemini API response:', error);
-      return {
-        statusCode: 500,
-        headers,
-        body: JSON.stringify({
-          error: {
-            message: 'Error parsing Gemini API response',
-            details: error.message
-          }
-        })
-      };
-    }
     return {
       statusCode: 200,
       headers,
@@ -216,33 +142,29 @@ exports.handler = async function(event) {
 
   } catch (error) {
     console.error('Function error:', error);
-    console.error('Error stack:', error.stack);
+    
+    // Determine appropriate error message and status code
+    let statusCode = 500;
+    let errorMessage = 'An internal server error occurred';
 
-    // Check if it's a network error
-    const isNetworkError = error.message && (
-      error.message.includes('ECONNREFUSED') ||
-      error.message.includes('ETIMEDOUT') ||
-      error.message.includes('ENOTFOUND') ||
-      error.message.includes('network')
-    );
+    if (error.message.includes('API key not valid')) {
+      statusCode = 401;
+      errorMessage = 'API key not valid. Please check the configuration.';
+    } else if (error.message.includes('timed out')) {
+      statusCode = 504;
+      errorMessage = 'The request timed out. Please try again with a simpler query.';
+    } else if (error.message.includes('rate limit') || error.message.includes('quota')) {
+      statusCode = 429;
+      errorMessage = 'Rate limit exceeded. Please wait a moment and try again.';
+    }
 
-    // Check if it's a timeout error
-    const isTimeoutError = error.name === 'AbortError' ||
-      (error.message && error.message.includes('timeout'));
-
-    // Return appropriate error message based on error type
     return {
-      statusCode: 500,
+      statusCode,
       headers,
       body: JSON.stringify({
         error: {
-          message: isNetworkError
-            ? 'Unable to connect to AI service. Please try again later.'
-            : isTimeoutError
-              ? 'Request to AI service timed out. Please try again with a simpler query.'
-              : 'Internal server error',
-          type: isNetworkError ? 'network_error' : isTimeoutError ? 'timeout_error' : 'server_error',
-          details: error.message
+          message: errorMessage,
+          details: process.env.NODE_ENV === 'development' ? error.message : undefined
         }
       })
     };
