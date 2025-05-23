@@ -27,21 +27,64 @@ let voicesLoaded = false;
 
 // Function to load and cache available voices
 function loadVoices() {
-  return new Promise((resolve) => {
-    let voices = speechSynthesis.getVoices();
+  return new Promise((resolve, reject) => {
+    const maxAttempts = 10;
+    let attempts = 0;
 
-    if (voices.length !== 0) {
-      voicesLoaded = true;
-      resolve(voices);
-    } else {
-      // Wait for voices to be loaded
-      speechSynthesis.onvoiceschanged = () => {
-        voices = speechSynthesis.getVoices();
+    function tryLoadVoices() {
+      let voices = speechSynthesis.getVoices();
+
+      if (voices.length !== 0) {
         voicesLoaded = true;
         resolve(voices);
-      };
+      } else if (attempts < maxAttempts) {
+        attempts++;
+        setTimeout(tryLoadVoices, 500); // Try again after 500ms
+      } else {
+        console.warn('Could not load voices after multiple attempts');
+        // Resolve with empty array rather than reject to prevent breaking the app
+        resolve([]);
+      }
     }
+
+    // Set up the onvoiceschanged handler
+    speechSynthesis.onvoiceschanged = () => {
+      const voices = speechSynthesis.getVoices();
+      if (voices.length !== 0) {
+        voicesLoaded = true;
+        resolve(voices);
+      }
+    };
+
+    // Start the first attempt
+    tryLoadVoices();
   });
+}
+
+// Function to get the best Indian English voice
+function getIndianEnglishVoice(voices) {
+  // First try: exact match for Indian English
+  let indianVoice = voices.find(voice => voice.lang === 'en-IN');
+  
+  if (!indianVoice) {
+    // Second try: name contains Indian/India and is English
+    indianVoice = voices.find(voice => 
+      voice.lang.startsWith('en-') && 
+      (voice.name.toLowerCase().includes('indian') || 
+       voice.name.toLowerCase().includes('india'))
+    );
+  }
+  
+  if (!indianVoice) {
+    // Third try: any English voice with similar characteristics
+    indianVoice = voices.find(voice => 
+      voice.lang === 'en-GB' || 
+      voice.lang === 'en-US'
+    );
+  }
+  
+  // Final fallback: any English voice or the first available voice
+  return indianVoice || voices.find(voice => voice.lang.startsWith('en-')) || voices[0];
 }
 
 let controller, typingInterval;
@@ -181,32 +224,67 @@ const createMessageElement = (content, ...classes) => {
 // Scroll to the bottom of the container
 const scrollToBottom = () => container.scrollTo({ top: container.scrollHeight, behavior: "smooth" });
 
-// Text-to-speech function - simplified for reliability
-const speakText = (text, messageDiv) => {
+// Text-to-speech function with Indian English accent
+const speakText = async (text, messageDiv) => {
   // Stop any current speech
   if (speechSynthesis.speaking) {
     speechSynthesis.cancel();
+    // Small delay to ensure previous speech is fully cancelled
+    await new Promise(resolve => setTimeout(resolve, 50));
   }
 
-  // Create a new speech utterance with simple settings
+  // Load voices if not already loaded
+  if (!voicesLoaded) {
+    await loadVoices();
+  }
+
+  // Create a new speech utterance
   const utterance = new SpeechSynthesisUtterance(text);
+  currentSpeech = utterance;
+  
+  // Get available voices
+  const voices = speechSynthesis.getVoices();
+  
+  // Set Indian English voice
+  utterance.voice = getIndianEnglishVoice(voices);
 
-  // Basic settings that work reliably
-  utterance.volume = 1.0;
-  utterance.rate = 1.0;
-  utterance.pitch = 1.0;
+  // Chrome fix - resume if speech gets stuck
+  const resumeInfinity = setInterval(() => {
+    if (speechSynthesis.speaking) speechSynthesis.resume();
+  }, 5000);
 
-  // Simple event handlers
+  // Clear the interval when speech ends
+  utterance.onend = () => {
+    clearInterval(resumeInfinity);
+    messageDiv.classList.remove("speaking");
+    currentSpeech = null;
+  };
+  
+  // Optimize settings for Indian English accent  utterance.volume = 1.0;
+  utterance.rate = 0.95; // Slightly slower but not too slow for natural Indian English
+  utterance.pitch = 1.05; // Subtle pitch adjustment for Indian accent
+  // Set proper Indian English accent
+  utterance.lang = 'en-IN';
+
+  // Comprehensive event handlers
   utterance.onstart = () => {
     messageDiv.classList.add("speaking");
   };
 
-  utterance.onend = () => {
+  utterance.onerror = (event) => {
+    console.warn('Speech synthesis error:', event);
     messageDiv.classList.remove("speaking");
-  };
+    currentSpeech = null;
+    clearInterval(resumeInfinity);
 
-  utterance.onerror = () => {
-    messageDiv.classList.remove("speaking");
+    // Try one more time with fallback settings
+    if (!event.target.hasRetried) {
+      event.target.hasRetried = true;
+      event.target.rate = 1.0;
+      event.target.pitch = 1.0;
+      event.target.voice = null; // Use default system voice
+      speechSynthesis.speak(event.target);
+    }
   };
 
   // Speak immediately
