@@ -495,148 +495,189 @@ const typingEffect = async (text, textElement, botMsgDiv) => {
   document.body.classList.remove("bot-responding");
 };
 
-// Make the API call and generate the bot's response
+// Constants for API handling
+const API_TIMEOUT = 30000; // 30 second timeout
+const MAX_RETRIES = 3;
+const RETRY_DELAY = 1000; // 1 second between retries
+
+// Make API request with retries
+const makeAPIRequest = async (requestData, currentRetry = 0) => {
+  try {
+    // Set up a timeout for the fetch request
+    const timeoutId = setTimeout(() => {
+      controller.abort();
+    }, API_TIMEOUT);
+
+    const response = await fetch(API_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(requestData),
+      signal: controller.signal,
+    });
+
+    // Clear timeout since request completed
+    clearTimeout(timeoutId);
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      const error = new Error(data.error?.message || `Server error (${response.status})`);
+      error.status = response.status;
+      throw error;
+    }
+
+    // Validate response format
+    if (!data.candidates?.[0]?.content?.parts?.[0]?.text) {
+      throw new Error("Invalid response format from AI service");
+    }
+
+    return data;
+  } catch (error) {
+    // Handle specific error cases
+    if (error.name === "AbortError") {
+      throw new Error("Request timed out. The AI service is taking too long to respond.");
+    }
+
+    // Handle rate limits and server errors with retries
+    if (currentRetry < MAX_RETRIES && 
+        (error.status === 429 || error.status >= 500 || error.message.includes('timeout'))) {
+      console.log(`Retrying request (${currentRetry + 1}/${MAX_RETRIES})...`);
+      await new Promise(resolve => setTimeout(resolve, RETRY_DELAY));
+      return makeAPIRequest(requestData, currentRetry + 1);
+    }
+
+    throw error;
+  }
+};
+
+// Update generateResponse to use the new API request function
 const generateResponse = async (botMsgDiv) => {
   const textElement = botMsgDiv.querySelector(".message-text");
   controller = new AbortController();
 
-  // Check for questions about Hammad or the creator
-  const creatorQuestions = [
-    "who is hammad",
-    "who created you",
-    "who developed you",
-    "who made you",
-    "tell me about hammad",
-    "who's your creator",
-    "who's your developer"
-  ];
-
-  if (creatorQuestions.some(q => userData.message.toLowerCase().includes(q))) {
-    const creatorResponse = "I was created by Hammad, a talented full-stack developer with expertise in modern web technologies. He developed me as an AI assistant to help users with various tasks. Hammad is passionate about creating innovative solutions and enhancing user experiences through technology. I'm proud to be one of his projects!";
-    typingEffect(creatorResponse, textElement, botMsgDiv);
-    chatHistory.push({ role: "model", parts: [{ text: creatorResponse }] });
-    return;
-  }
-
-  // API key is now hardcoded, no need to check
-
-  // Instead of sending the full chat history, just send the current message
-  // This helps prevent timeouts by keeping requests smaller
-  const simplifiedChatHistory = [
-    {
+  // Create simplified request data
+  const requestData = {
+    contents: [{
       role: "user",
-      parts: [{ text: userData.message }, ...(userData.file.data ? [{ inline_data: (({ fileName, isImage, ...rest }) => rest)(userData.file) }] : [])]
-    }
-  ];
-
-  // Still add to the full chat history for context in the UI
-  chatHistory.push({
-    role: "user",
-    parts: [{ text: userData.message }, ...(userData.file.data ? [{ inline_data: (({ fileName, isImage, ...rest }) => rest)(userData.file) }] : [])],
-  });
+      parts: [
+        { text: userData.message },
+        ...(userData.file.data ? [{ inline_data: (({ fileName, isImage, ...rest }) => rest)(userData.file) }] : [])
+      ]
+    }]
+  };
 
   try {
-    console.log('Sending simplified request to API:', JSON.stringify(simplifiedChatHistory));
-
-    // Set up a timeout for the fetch request
-    const timeoutId = setTimeout(() => {
-      controller.abort();
-    }, 25000); // 25 seconds timeout
-
-    // Send only the current message to the API to get a response
-    const response = await fetch(API_URL, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ contents: simplifiedChatHistory }),
-      signal: controller.signal,
-    }).catch(error => {
-      console.error('Network error:', error);
-      if (error.name === 'AbortError') {
-        throw new Error("Request timed out. The AI service is taking too long to respond.");
-      }
-      throw new Error("Network error: Unable to connect to the server");
-    });
-
-    // Clear the timeout since the request completed
-    clearTimeout(timeoutId);
-
-    let data;
-    try {
-      data = await response.json();
-      console.log('API response:', data);
-    } catch (error) {
-      console.error('Error parsing response:', error);
-      throw new Error("Invalid response from server");
-    }
-
-    if (!response.ok) {
-      console.error('API error response:', data);
-      throw new Error(data.error?.message || `Server error (${response.status})`);
-    }
-
-    if (!data.candidates?.[0]?.content?.parts?.[0]?.text) {
-      console.error('Invalid response format:', data);
-      throw new Error("Invalid response format from AI service");
-    }
-
-    // Process the response text and display with typing effect
+    const data = await makeAPIRequest(requestData);
     const responseText = data.candidates[0].content.parts[0].text.replace(/\*\*([^\*]+)\*\*/g, "$1").trim();
 
-    console.log("Response received, length:", responseText.length);
-    console.log("First 100 chars:", responseText.substring(0, 100));
-
-    // Check if the response contains code blocks
-    const hasCodeBlocks = responseText.includes("```");
-    console.log("Response contains code blocks:", hasCodeBlocks);
-
-    // Always use formatCodeBlocks for all responses
-    // This ensures code blocks are always detected and rendered properly
-    formatCodeBlocks(responseText, textElement, botMsgDiv);
-
+    // Add to chat history
     chatHistory.push({ role: "model", parts: [{ text: responseText }] });
-  } catch (error) {
-    let errorMessage;
-    console.error("Error in generateResponse:", error);
 
-    // Check if it's an API response error
-    if (error.message.includes('429')) {
+    // Process the response
+    await formatCodeBlocks(responseText, textElement, botMsgDiv);
+  } catch (error) {
+    console.error("Error in generateResponse:", error);
+    
+    let errorMessage = "An error occurred. Please try again later.";
+    if (error.message.includes('timeout')) {
+      errorMessage = "The request timed out. Please try again with a shorter message.";
+    } else if (error.message.includes('rate limit')) {
       errorMessage = "You've reached the rate limit. Please wait a moment before sending another message.";
-      setTimeout(() => {
-        document.body.classList.remove("bot-responding");
-      }, 30000); // Wait 30 seconds before allowing new messages
-    } else if (error.message.includes('Network error')) {
-      errorMessage = "Unable to connect to the server. Please check your internet connection.";
     } else if (error.message.includes('Invalid response')) {
-      errorMessage = "The AI service returned an invalid response. Please try again.";
-    } else if (error.message.includes('timed out')) {
-      errorMessage = "The request timed out. The AI service is taking too long to respond. Please try again with a simpler question.";
-    } else if (error.name === "AbortError") {
-      errorMessage = "Response generation stopped.";
-    } else if (error.message.includes('API key not valid') || error.message.includes('key not valid')) {
-      errorMessage = "API key not valid. Please contact the administrator to update the API key.";
-      console.error("API KEY ERROR: The Gemini API key is invalid or unauthorized");
-    } else if (error.message.includes('Server configuration error')) {
-      errorMessage = "The server is missing required configuration. Please contact the administrator.";
-    } else if (error.message.includes('Server error') || error.message.includes('500')) {
-      errorMessage = "The AI service encountered an error. Please try again later.";
-    } else {
-      errorMessage = "An error occurred. Please try again later.";
-      console.error("Chat error details:", error.message);
+      errorMessage = "The AI service response was invalid. Please try again.";
     }
 
     textElement.textContent = errorMessage;
     textElement.style.color = "var(--error-color)";
-    botMsgDiv.classList.remove("loading");
-    document.body.classList.remove("bot-responding");
-
-    scrollToBottom();
-
-    // Show a toast notification for the error
     showNotification(errorMessage, "error");
   } finally {
+    botMsgDiv.classList.remove("loading");
+    document.body.classList.remove("bot-responding");
     userData.file = {};
+  }
+};
+
+// Improved error handling with recovery options
+const handleError = async (error, botMsgDiv, retry = false) => {
+  const textElement = botMsgDiv.querySelector(".message-text");
+  let errorMessage;
+  let canRetry = false;
+
+  if (error.message.includes('timeout')) {
+    errorMessage = "The request timed out. You can try again with a shorter message.";
+    canRetry = true;
+  } else if (error.message.includes('rate limit') || error.status === 429) {
+    const waitTime = 30;
+    errorMessage = `Rate limit reached. Please wait ${waitTime} seconds.`;
+    // Auto-retry after delay
+    setTimeout(() => {
+      if (retry) {
+        generateResponse(botMsgDiv).catch(e => handleError(e, botMsgDiv, false));
+      }
+    }, waitTime * 1000);
+  } else if (error.message.includes('Network') || error.status >= 500) {
+    errorMessage = "Connection issue. Click here to try again.";
+    canRetry = true;
+  } else {
+    errorMessage = "An error occurred. Please try again later.";
+  }
+
+  textElement.textContent = errorMessage;
+  textElement.style.color = "var(--error-color)";
+  
+  if (canRetry) {
+    textElement.style.cursor = "pointer";
+    textElement.onclick = () => {
+      textElement.onclick = null;
+      textElement.style.cursor = "default";
+      generateResponse(botMsgDiv).catch(e => handleError(e, botMsgDiv, false));
+    };
+  }
+
+  showNotification(errorMessage, "error");
+};
+
+// Show loading state with better feedback
+const showLoadingState = (botMsgDiv) => {
+  const textElement = botMsgDiv.querySelector(".message-text");
+  const loadingDots = ["⋯", ".", "..", "..."];
+  let dotIndex = 0;
+
+  // Clear existing loading interval if any
+  clearInterval(typingInterval);
+
+  // Show initial loading state
+  textElement.textContent = "Thinking" + loadingDots[0];
+  
+  // Animate loading dots
+  typingInterval = setInterval(() => {
+    dotIndex = (dotIndex + 1) % loadingDots.length;
+    textElement.textContent = "Thinking" + loadingDots[dotIndex];
+  }, 500);
+
+  return () => {
+    clearInterval(typingInterval);
+    typingInterval = null;
+  };
+};
+
+// Update message handling
+const handleMessage = async (userMessage) => {
+  // ...existing code...
+  
+  const botMsgHTML = `<img class="avatar" src="/logo.jpeg" alt="HammadGenie" /> <p class="message-text"></p>`;
+  const botMsgDiv = createMessageElement(botMsgHTML, "bot-message", "loading");
+  chatsContainer.appendChild(botMsgDiv);
+  scrollToBottom();
+
+  const clearLoading = showLoadingState(botMsgDiv);
+  
+  try {
+    await generateResponse(botMsgDiv);
+  } catch (error) {
+    handleError(error, botMsgDiv);
+  } finally {
+    clearLoading();
   }
 };
 
@@ -898,85 +939,55 @@ if (isMobile) {
     });
   });
 
-  // Handle input focus for better mobile experience
-  const promptInput = document.querySelector('.prompt-input');
-  if (promptInput) {
-    // Improve focus behavior
-    promptInput.addEventListener('focus', function() {
-      // Add a small delay to ensure the viewport change takes effect
-      setTimeout(function() {
-        // Scroll to make sure header is visible
-        const header = document.querySelector('.app-header');
-        if (header) {
-          header.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        }
-      }, 100);
-    });
+  // Mobile keyboard and input handling
+  function initializeMobileInputHandling() {
+    const promptInput = document.querySelector('.prompt-input');
+    const appHeader = document.querySelector('.app-header');
 
-    // Handle keyboard showing
-    promptInput.addEventListener('focus', function() {
-      // Add class to body when keyboard is likely shown
-      document.body.classList.add('keyboard-open');
+    if (promptInput) {
+      // Prevent zoom on double tap and preserve font size
+      promptInput.style.fontSize = '16px';
 
-      // Scroll to the input after a short delay to ensure it's visible
-      setTimeout(function() {
-        // Scroll to the bottom of the page
-        window.scrollTo(0, document.body.scrollHeight);
-      }, 300);
-    });
+      // Handle keyboard visibility
+      if (window.visualViewport) {
+        window.visualViewport.addEventListener('resize', () => {
+          const isKeyboardOpen = window.visualViewport.height < window.innerHeight;
+          document.body.classList.toggle('keyboard-open', isKeyboardOpen);
 
-    promptInput.addEventListener('blur', function() {
-      // Remove class when keyboard is likely hidden
-      document.body.classList.remove('keyboard-open');
-    });
-
-    // Prevent zoom on tap
-    promptInput.addEventListener('touchstart', function(e) {
-      if (e.touches.length > 1) {
-        e.preventDefault(); // Prevent pinch zoom
+          if (isKeyboardOpen) {
+            // Ensure the input is visible when keyboard opens
+            setTimeout(() => {
+              promptInput.scrollIntoView({ behavior: 'smooth', block: 'end' });
+            }, 100);
+          }
+        });
       }
-    }, { passive: false });
-  }
 
-  // Keyboard handling for mobile devices
-  function handleKeyboardVisibility() {
-    const visualViewport = window.visualViewport;
-
-    if (visualViewport) {
-      visualViewport.addEventListener('resize', () => {
-        const isKeyboardOpen = visualViewport.height < window.innerHeight;
-        document.body.classList.toggle('keyboard-open', isKeyboardOpen);
-
-        if (isKeyboardOpen) {
-          // Scroll to input when keyboard opens
-          setTimeout(() => {
-            promptInput.scrollIntoView({ behavior: 'smooth' });
-          }, 100);
-        }
+      // Improve focus behavior
+      promptInput.addEventListener('focus', () => {
+        document.body.classList.add('keyboard-open');
+        requestAnimationFrame(() => {
+          promptInput.scrollIntoView({ behavior: 'smooth', block: 'end' });
+        });
       });
+
+      promptInput.addEventListener('blur', () => {
+        document.body.classList.remove('keyboard-open');
+      });
+
+      // Prevent zoom on tap
+      promptInput.addEventListener('touchstart', (e) => {
+        if (e.touches.length > 1) {
+          e.preventDefault();
+        }
+      }, { passive: false });
     }
-
-    // Handle input focus
-    promptInput.addEventListener('focus', () => {
-      document.body.classList.add('keyboard-open');
-      setTimeout(() => {
-        window.scrollTo(0, document.body.scrollHeight);
-      }, 100);
-    });
-
-    promptInput.addEventListener('blur', () => {
-      document.body.classList.remove('keyboard-open');
-    });
   }
 
-  // Initialize keyboard handling
-  handleKeyboardVisibility();
-
-  // Improved touch handling for mobile devices
-  document.addEventListener('touchstart', (e) => {
-    if (e.target.tagName !== 'INPUT' && e.target.tagName !== 'TEXTAREA') {
-      // Allow normal touch behavior for non-input elements
-      return true;
+  // Call the initialization function when the document loads
+  document.addEventListener('DOMContentLoaded', () => {
+    if (window.matchMedia("(max-width: 768px)").matches) {
+      initializeMobileInputHandling();
     }
   });
 }
