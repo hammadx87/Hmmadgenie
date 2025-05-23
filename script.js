@@ -754,9 +754,11 @@ const handleFormSubmit = async (e) => {
 
   // Add a small delay before showing bot response
   await new Promise(resolve => setTimeout(resolve, 600));
-
   // Generate bot message HTML and add in the chat container
-  const botMsgHTML = `<img class="avatar" src="/logo.jpeg" alt="HammadGenie" /> <p class="message-text">Just a sec...</p>`;
+  const botMsgHTML = `<img class="avatar" src="/logo.jpeg" alt="PrognosisAI" /> 
+    <div class="message-content">
+      <p class="message-text"><span class="material-symbols-rounded thinking-icon">psychology</span> Thinking...</p>
+    </div>`;
   const botMsgDiv = createMessageElement(botMsgHTML, "bot-message", "loading");
   chatsContainer.appendChild(botMsgDiv);
   scrollToBottom();
