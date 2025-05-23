@@ -51,13 +51,20 @@ const userData = { message: "", file: {} };
 // No need for API key check anymore - it's hardcoded
 
 // Function to handle creator-related questions
-function handleCreatorQuestion(message) {
-  const creatorPatterns = [
+function handleCreatorQuestion(message) {  const creatorPatterns = [
     /who (created|made|developed|built|designed) you/i,
     /who('s| is) your (creator|developer|maker|designer)/i,
     /who are you made by/i,
-    /who (is|are) you/i
-  ];
+    /who (is|are) you/i,
+    /who is hammad/i,
+    /tell me about hammad/i,
+    /what do you know about hammad/i,
+    /who('s| is) hammad/i
+  ];  // If it's a direct question about Hammad
+  if (/who is hammad|tell me about hammad|what do you know about hammad|who('s| is) hammad/i.test(message)) {
+    return "Hammad is a talented full-stack developer who created me. He specializes in modern web technologies and AI integration. He built me as an AI assistant to help users with various tasks, demonstrating his expertise in AI and web development.";
+  }
+  // For other creator-related questions
   return creatorPatterns.some(pattern => pattern.test(message)) ?
     "I am PrognosisAI, created by Hammad x Code, a talented developer who built me to assist users like you." : null;
 }
