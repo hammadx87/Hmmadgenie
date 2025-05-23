@@ -457,27 +457,34 @@ function highlightJS(code) {
 const typingEffect = async (text, textElement, botMsgDiv) => {
   const characters = text.split('');
   textElement.textContent = '';
+  let buffer = '';
+  let lastTime = Date.now();
   
   for (let i = 0; i < characters.length; i++) {
-    textElement.textContent += characters[i];
+    buffer += characters[i];
     
-    // Scroll as we type
-    scrollToBottom();
-    
-    // Calculate delay based on character and context
-    let delay = 30; // base delay for each character
-    
-    // Longer pause after punctuation
-    if ('.!?'.includes(characters[i])) {
-      delay = 500;
-    } 
-    // Medium pause after comma or semicolon
-    else if (',;'.includes(characters[i])) {
-      delay = 200;
+    // Update text and scroll less frequently to improve performance
+    const now = Date.now();
+    if (now - lastTime > 32) { // Approximately 30fps
+      textElement.textContent = buffer;
+      scrollToBottom();
+      lastTime = now;
     }
-    // Slight pause for spaces
+    
+    // Much faster delays for smoother typing
+    let delay = 10; // base delay (much faster now)
+    
+    // Quick pause after punctuation
+    if ('.!?'.includes(characters[i])) {
+      delay = 100; // Reduced from 500ms
+    } 
+    // Brief pause after comma or semicolon
+    else if (',;'.includes(characters[i])) {
+      delay = 50; // Reduced from 200ms
+    }
+    // Minimal pause for spaces
     else if (characters[i] === ' ') {
-      delay = 60;
+      delay = 15; // Reduced from 60ms
     }
     
     await new Promise(resolve => setTimeout(resolve, delay));
