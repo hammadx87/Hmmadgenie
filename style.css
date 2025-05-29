@@ -362,6 +362,9 @@ body.keyboard-open .container .prompt-container {
   font-size: clamp(14px, 3.5vw, 16px);
   line-height: 1.5;
   max-width: 85%;
+  position: relative;
+  z-index: 2;
+  display: block;
 }
 
 /* Code block styling */
@@ -372,6 +375,9 @@ body.keyboard-open .container .prompt-container {
   overflow: hidden;
   background: #0d1117;
   font-family: Consolas, Monaco, 'Andale Mono', 'Ubuntu Mono', monospace;
+  z-index: 1;
+  display: block;
+  clear: both;
 }
 
 .code-header {
@@ -1331,6 +1337,66 @@ body.recording #voice-input-btn {
   animation: pulse-scale 2s ease-in-out infinite;
 }
 
+/* Typing effect styles */
+.typing {
+  position: relative;
+}
+
+.typing::after {
+  content: '|';
+  color: var(--accent-color);
+  animation: blink 1s infinite;
+  font-weight: bold;
+  margin-left: 2px;
+}
+
+@keyframes blink {
+  0%, 50% { opacity: 1; }
+  51%, 100% { opacity: 0; }
+}
+
+/* Code typing indicator */
+.code-typing-indicator {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 16px;
+  background: var(--secondary-color);
+  border-radius: 8px;
+  margin: 8px 0;
+  color: var(--accent-color);
+  font-size: 14px;
+  border: 1px solid var(--secondary-hover-color);
+  animation: pulse 2s ease-in-out infinite;
+}
+
+.code-typing-indicator .material-symbols-rounded {
+  font-size: 18px;
+  animation: rotate 2s linear infinite;
+}
+
+@keyframes rotate {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+/* Enhanced code container animations */
+.code-container {
+  transition: all 0.3s ease;
+}
+
+.code-container:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+/* Header controls layout */
+.header-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
 @keyframes pulse-scale {
   0% { transform: scale(1); opacity: 0.7; }
   50% { transform: scale(1.1); opacity: 1; }
@@ -1348,4 +1414,27 @@ body.recording #voice-input-btn {
   display: flex;
   flex-direction: column;
   flex: 1;
+  position: relative;
+  z-index: 2;
+  width: 100%;
+}
+
+.message-content > * {
+  margin-bottom: 10px;
+}
+
+.message-content > *:last-child {
+  margin-bottom: 0;
+}
+
+.text-content {
+  padding: clamp(8px, 2vw, 16px);
+  word-wrap: break-word;
+  white-space: pre-line;
+  font-size: clamp(14px, 3.5vw, 16px);
+  line-height: 1.5;
+  max-width: 85%;
+  position: relative;
+  z-index: 2;
+  display: block;
 }

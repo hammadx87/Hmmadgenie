@@ -65,24 +65,24 @@ function loadVoices() {
 function getIndianEnglishVoice(voices) {
   // First try: exact match for Indian English
   let indianVoice = voices.find(voice => voice.lang === 'en-IN');
-  
+
   if (!indianVoice) {
     // Second try: name contains Indian/India and is English
-    indianVoice = voices.find(voice => 
-      voice.lang.startsWith('en-') && 
-      (voice.name.toLowerCase().includes('indian') || 
+    indianVoice = voices.find(voice =>
+      voice.lang.startsWith('en-') &&
+      (voice.name.toLowerCase().includes('indian') ||
        voice.name.toLowerCase().includes('india'))
     );
   }
-  
+
   if (!indianVoice) {
     // Third try: any English voice with similar characteristics
-    indianVoice = voices.find(voice => 
-      voice.lang === 'en-GB' || 
+    indianVoice = voices.find(voice =>
+      voice.lang === 'en-GB' ||
       voice.lang === 'en-US'
     );
   }
-  
+
   // Final fallback: any English voice or the first available voice
   return indianVoice || voices.find(voice => voice.lang.startsWith('en-')) || voices[0];
 }
@@ -119,7 +119,7 @@ function sendWelcomeMessage() {
     // Add chats-active class to body
     document.body.classList.add("chats-active");    // Create welcome message
     const welcomeMessage = "Hello, I'm PrognosisAI, developed by Hammad x Code! How can I assist you today?";
-    const botMsgHTML = `<img class="avatar" src="/logo.jpeg" /> <p class="message-text">${welcomeMessage}</p>`;
+    const botMsgHTML = `<img class="avatar" src="/logo.svg" /> <p class="message-text">${welcomeMessage}</p>`;
     const botMsgDiv = createMessageElement(botMsgHTML, "bot-message");
 
     // Add to chat container
@@ -241,10 +241,10 @@ const speakText = async (text, messageDiv) => {
   // Create a new speech utterance
   const utterance = new SpeechSynthesisUtterance(text);
   currentSpeech = utterance;
-  
+
   // Get available voices
   const voices = speechSynthesis.getVoices();
-  
+
   // Set Indian English voice
   utterance.voice = getIndianEnglishVoice(voices);
 
@@ -259,7 +259,7 @@ const speakText = async (text, messageDiv) => {
     messageDiv.classList.remove("speaking");
     currentSpeech = null;
   };
-  
+
   // Optimize settings for Indian English accent  utterance.volume = 1.0;
   utterance.rate = 0.95; // Slightly slower but not too slow for natural Indian English
   utterance.pitch = 1.05; // Subtle pitch adjustment for Indian accent
@@ -302,35 +302,60 @@ const stopSpeech = () => {
   }
 };
 
-// Format code blocks in the response
+// Format code blocks in the response with typing effect
 const formatCodeBlocks = async (text, textElement, botMsgDiv) => {
-  textElement.innerHTML = ""; // Use innerHTML instead of textContent
-  
+  // Find the message content container
+  const messageContent = botMsgDiv.querySelector(".message-content");
+  const container = messageContent || textElement.parentElement;
+
+  // Clear the text element and use the container for all content
+  textElement.innerHTML = "";
+
   // More robust regex to match code blocks with language
   const parts = text.split(/(```(?:[\w-]+)?\n[\s\S]*?```)/g);
-  
+
   // Process each part sequentially
   for (const part of parts) {
+    // Check if user wants to stop the response
+    if (controller.signal.aborted) {
+      break;
+    }
+
     if (part.startsWith('```')) {
-      // Process code block
+      // Process code block with typing effect
       const match = part.match(/```([\w-]+)?\n([\s\S]*?)```/);
       if (match) {
         const [_, language = 'javascript', code] = match;
-        
+
+        // Add typing indicator for code block
+        const codeIndicator = document.createElement('div');
+        codeIndicator.className = 'code-typing-indicator';
+        codeIndicator.innerHTML = '<span class="material-symbols-rounded">code</span> Writing code...';
+        container.appendChild(codeIndicator);
+
+        // Wait a brief moment to show the indicator
+        await new Promise(resolve => setTimeout(resolve, 200));
+
+        // Remove indicator
+        container.removeChild(codeIndicator);
+
         // Create container for code block
         const codeContainer = document.createElement('div');
         codeContainer.className = 'code-container';
-        
+        codeContainer.style.opacity = '0';
+        codeContainer.style.transform = 'translateY(10px)';
+        codeContainer.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
+
         // Create header
         const codeHeader = document.createElement('div');
         codeHeader.className = 'code-header';
-        
+
         // Add language indicator
         const langIndicator = document.createElement('div');
         langIndicator.className = 'code-language';
         langIndicator.textContent = language;
         codeHeader.appendChild(langIndicator);
-        
+
         // Add copy button
         const copyButton = document.createElement('button');
         copyButton.className = 'copy-button';
@@ -344,14 +369,14 @@ const formatCodeBlocks = async (text, textElement, botMsgDiv) => {
           });
         });
         codeHeader.appendChild(copyButton);
-        
+
         // Add header to container
         codeContainer.appendChild(codeHeader);
-        
+
         // Create code block
         const codeBlock = document.createElement('div');
         codeBlock.className = 'code-block';
-        
+
         // Apply syntax highlighting based on language
         let highlightedCode = code;
         if (language === 'html') {
@@ -361,22 +386,32 @@ const formatCodeBlocks = async (text, textElement, botMsgDiv) => {
         } else if (language === 'javascript' || language === 'js') {
           highlightedCode = highlightJS(code);
         }
-        
+
         codeBlock.innerHTML = highlightedCode;
         codeContainer.appendChild(codeBlock);
-        textElement.appendChild(codeContainer);
-        
-        // Small pause after code block
-        await new Promise(resolve => setTimeout(resolve, 500));
+
+        // Append to the same container for proper order
+        container.appendChild(codeContainer);
+
+        // Animate code block appearance
+        setTimeout(() => {
+          codeContainer.style.opacity = '1';
+          codeContainer.style.transform = 'translateY(0)';
+        }, 20);
+
+        // Brief pause after code block
+        await new Promise(resolve => setTimeout(resolve, 100));
+        scrollToBottom();
       }
     } else if (part.trim()) {
       // Process regular text with typing effect
-      const textNode = document.createElement('span');
-      textElement.appendChild(textNode);
+      const textNode = document.createElement('div');
+      textNode.className = 'text-content';
+      container.appendChild(textNode);
       await typingEffect(part, textNode, botMsgDiv);
     }
   }
-  
+
   // Cleanup
   botMsgDiv.classList.remove("loading");
   document.body.classList.remove("bot-responding");
@@ -535,46 +570,78 @@ function highlightJS(code) {
   }
 }
 
+// Typing speed settings
+const TYPING_SPEEDS = {
+  slow: { base: 80, punctuation: 400, comma: 200, space: 40 },
+  normal: { base: 40, punctuation: 200, comma: 100, space: 20 },
+  fast: { base: 20, punctuation: 100, comma: 50, space: 10 },
+  instant: { base: 3, punctuation: 8, comma: 5, space: 2 }, // Very fast but still visible
+  realtime: { base: 1, punctuation: 3, comma: 2, space: 1 } // Fastest possible while maintaining effect
+};
+
+// Get current typing speed (can be controlled by user preference)
+let currentTypingSpeed = 'realtime'; // Default to fastest real-time speed
+
 // Simulate typing effect for bot responses
 const typingEffect = async (text, textElement, botMsgDiv) => {
   const characters = text.split('');
   textElement.textContent = '';
   let buffer = '';
   let lastTime = Date.now();
-  
+  const speed = TYPING_SPEEDS[currentTypingSpeed];
+
+  // Add typing indicator
+  textElement.classList.add('typing');
+
   for (let i = 0; i < characters.length; i++) {
+    // Check if user wants to stop the response
+    if (controller.signal.aborted) {
+      break;
+    }
+
     buffer += characters[i];
-    
-    // Update text and scroll less frequently to improve performance
+
+    // Update text and scroll more frequently for real-time effect
     const now = Date.now();
-    if (now - lastTime > 32) { // Approximately 30fps
+    if (now - lastTime > 8) { // Higher frequency updates for smoother real-time effect
       textElement.textContent = buffer;
       scrollToBottom();
       lastTime = now;
     }
-    
-    // Much faster delays for smoother typing
-    let delay = 10; // base delay (much faster now)
-    
-    // Quick pause after punctuation
+
+    // Variable delays based on character type for more realistic typing
+    let delay = speed.base;
+
+    // Shorter pauses for real-time effect but still noticeable
     if ('.!?'.includes(characters[i])) {
-      delay = 100; // Reduced from 500ms
-    } 
-    // Brief pause after comma or semicolon
-    else if (',;'.includes(characters[i])) {
-      delay = 50; // Reduced from 200ms
+      delay = speed.punctuation;
     }
-    // Minimal pause for spaces
+    // Medium pause after comma or semicolon
+    else if (',;:'.includes(characters[i])) {
+      delay = speed.comma;
+    }
+    // Short pause for spaces
     else if (characters[i] === ' ') {
-      delay = 15; // Reduced from 60ms
+      delay = speed.space;
     }
-    
+    // Slightly longer for newlines
+    else if (characters[i] === '\n') {
+      delay = speed.comma;
+    }
+
+    // Minimal randomness for consistent fast speed
+    const randomVariation = Math.random() * 0.2 + 0.9; // 90% to 110% of base delay
+    delay = Math.floor(delay * randomVariation);
+
     await new Promise(resolve => setTimeout(resolve, delay));
   }
-  
-  // Cleanup
-  botMsgDiv.classList.remove("loading");
-  document.body.classList.remove("bot-responding");
+
+  // Remove typing indicator
+  textElement.classList.remove('typing');
+
+  // Final update to ensure all text is displayed
+  textElement.textContent = buffer;
+  scrollToBottom();
 };
 
 // Constants for API handling
@@ -621,7 +688,7 @@ const makeAPIRequest = async (requestData, currentRetry = 0) => {
     }
 
     // Handle rate limits and server errors with retries
-    if (currentRetry < MAX_RETRIES && 
+    if (currentRetry < MAX_RETRIES &&
         (error.status === 429 || error.status >= 500 || error.message.includes('timeout'))) {
       console.log(`Retrying request (${currentRetry + 1}/${MAX_RETRIES})...`);
       await new Promise(resolve => setTimeout(resolve, RETRY_DELAY));
@@ -634,7 +701,8 @@ const makeAPIRequest = async (requestData, currentRetry = 0) => {
 
 // Update generateResponse to use the new API request function
 const generateResponse = async (botMsgDiv) => {
-  const textElement = botMsgDiv.querySelector(".message-text");
+  const messageContent = botMsgDiv.querySelector(".message-content");
+  const textElement = messageContent ? messageContent.querySelector(".message-text") : botMsgDiv.querySelector(".message-text");
   controller = new AbortController();
 
   // Create simplified request data
@@ -659,7 +727,7 @@ const generateResponse = async (botMsgDiv) => {
     await formatCodeBlocks(responseText, textElement, botMsgDiv);
   } catch (error) {
     console.error("Error in generateResponse:", error);
-    
+
     let errorMessage = "An error occurred. Please try again later.";
     if (error.message.includes('timeout')) {
       errorMessage = "The request timed out. Please try again with a shorter message.";
@@ -706,7 +774,7 @@ const handleError = async (error, botMsgDiv, retry = false) => {
 
   textElement.textContent = errorMessage;
   textElement.style.color = "var(--error-color)";
-  
+
   if (canRetry) {
     textElement.style.cursor = "pointer";
     textElement.onclick = () => {
@@ -730,7 +798,7 @@ const showLoadingState = (botMsgDiv) => {
 
   // Show initial loading state
   textElement.textContent = "Thinking" + loadingDots[0];
-  
+
   // Animate loading dots
   typingInterval = setInterval(() => {
     dotIndex = (dotIndex + 1) % loadingDots.length;
@@ -746,14 +814,14 @@ const showLoadingState = (botMsgDiv) => {
 // Update message handling
 const handleMessage = async (userMessage) => {
   // ...existing code...
-  
+
   const botMsgHTML = `<img class="avatar" src="/logo.jpeg" alt="HammadGenie" /> <p class="message-text"></p>`;
   const botMsgDiv = createMessageElement(botMsgHTML, "bot-message", "loading");
   chatsContainer.appendChild(botMsgDiv);
   scrollToBottom();
 
   const clearLoading = showLoadingState(botMsgDiv);
-  
+
   try {
     await generateResponse(botMsgDiv);
   } catch (error) {
@@ -833,7 +901,7 @@ const handleFormSubmit = async (e) => {
   // Add a small delay before showing bot response
   await new Promise(resolve => setTimeout(resolve, 600));
   // Generate bot message HTML and add in the chat container
-  const botMsgHTML = `<img class="avatar" src="/logo.jpeg" alt="PrognosisAI" /> 
+  const botMsgHTML = `<img class="avatar" src="/logo.jpeg" alt="PrognosisAI" />
     <div class="message-content">
       <p class="message-text"><span class="material-symbols-rounded thinking-icon">psychology</span> Thinking...</p>
     </div>`;
@@ -930,6 +998,8 @@ themeToggleBtn.addEventListener("click", () => {
   localStorage.setItem("themeColor", isLightTheme ? "light_mode" : "dark_mode");
   themeToggleBtn.textContent = isLightTheme ? "dark_mode" : "light_mode";
 });
+
+// Typing speed is now fixed to 'fast' - no user controls needed
 
 // Delete all chats
 document.querySelector("#delete-chats-btn").addEventListener("click", () => {
