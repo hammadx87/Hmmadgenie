@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PrognosisAI | Developer Authentication</title>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <link rel="stylesheet" href="/landing/css/styles.css">
+</head>
+<body>
+    <div class="terminal-bg"></div>
+    
+    <div class="container">
+        <header class="header">
+            <div class="logo">
+                <span class="logo-bracket">{</span>PrognosisAI<span class="logo-bracket">}</span>
+            </div>
+            <nav class="nav">
+                <a href="#" class="nav-link">Docs</a>
+                <a href="#" class="nav-link">API</a>
+                <a href="#" class="nav-link">Pricing</a>
+            </nav>
+        </header>
+
+        <main class="main-content">
+            <div class="hero">
+                <div class="terminal-window">
+                    <div class="terminal-header">
+                        <div class="terminal-buttons">
+                            <span class="terminal-button close"></span>
+                            <span class="terminal-button minimize"></span>
+                            <span class="terminal-button maximize"></span>
+                        </div>
+                        <div class="terminal-title">auth.ps1</div>
+                    </div>
+                    <div class="terminal-body" id="terminal">
+                        <div class="typing-line">
+                            <span class="prompt">$</span>
+                            <span class="command">print("Verify Your Identity to Access PrognosisAI")</span>
+                            <span class="cursor">|</span>
+                        </div>
+                        <div class="output">
+                            <p class="comment"># Securely authenticate to unlock AI-powered code reviews, debugging, and autocomplete.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="auth-container">
+                    <h2 class="section-title">Select Your Development Environment</h2>
+                    
+                    <div class="oauth-providers">
+                        <button id="google-signin" class="oauth-button" style="background: #ffffff; color: #333; border: 1px solid #e0e0e0;">
+                            <img src="https://www.google.com/favicon.ico" alt="Google" style="width: 20px; height: 20px; margin-right: 10px; vertical-align: middle;">
+                            <span>Continue with Google</span>
+                        </button>
+                        
+                        <button class="oauth-button" style="background: #24292e; color: white;" disabled>
+                            <i class="fab fa-github"></i>
+                            <span>Continue with GitHub</span>
+                            <span class="provider-tag">Coming Soon</span>
+                        </button>
+                        
+                        <button class="oauth-button" style="background: #000000; color: white;" disabled>
+                            <i class="fab fa-apple"></i>
+                            <span>Continue with Apple</span>
+                            <span class="provider-tag">Coming Soon</span>
+                        </button>
+                    </div>
+                    
+                    <script type="module">
+                        import { AuthService } from '../js/auth-service.js';
+                        
+                        document.getElementById('google-signin').addEventListener('click', async () => {
+                            try {
+                                const button = document.getElementById('google-signin');
+                                const originalText = button.innerHTML;
+                                button.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Signing in...';
+                                button.disabled = true;
+                                
+                                await AuthService.signInWithGoogle();
+                                // The page will redirect automatically on success
+                            } catch (error) {
+                                console.error('Authentication error:', error);
+                                alert('Failed to sign in with Google. Please try again.');
+                                button.innerHTML = originalText;
+                                button.disabled = false;
+                            }
+                        });
+                    </script>
+                    
+                    <div class="divider">
+                        <span>OR</span>
+                    </div>
+                    
+                    <div class="email-auth" style="margin: 20px 0;">
+                        <input 
+                            type="email" 
+                            placeholder="email@company.com" 
+                            class="email-input"
+                            style="
+                                width: 100%;
+                                padding: 12px 16px;
+                                margin-bottom: 15px;
+                                border: 1px solid #e0e0e0;
+                                border-radius: 6px;
+                                font-size: 0.95rem;
+                                font-family: 'Inter', sans-serif;
+                                transition: border-color 0.2s;
+                            "
+                            onfocus="this.style.borderColor='#007bff'; this.style.outline='none'"
+                            onblur="this.style.borderColor='#e0e0e0'"
+                        >
+                        <button 
+                            class="email-button"
+                            style="
+                                width: 100%;
+                                padding: 12px 16px;
+                                background: linear-gradient(135deg, #6c5ce7 0%, #a29bfe 100%);
+                                color: white;
+                                border: none;
+                                border-radius: 8px;
+                                font-size: 0.95rem;
+                                font-weight: 500;
+                                cursor: pointer;
+                                transition: all 0.3s ease;
+                                display: flex;
+                                align-items: center;
+                                justify-content: center;
+                                gap: 10px;
+                                box-shadow: 0 4px 6px rgba(108, 92, 231, 0.2);
+                                position: relative;
+                                overflow: hidden;
+                            "
+                            onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 6px 12px rgba(108, 92, 231, 0.3)'"
+                            onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 4px 6px rgba(108, 92, 231, 0.2)'"
+                            onmousedown="this.style.transform='translateY(1px)'"
+                        >
+                            <i class="fas fa-envelope"></i>
+                            <span>Continue with Email</span>
+                        </button>
+                    </div>
+                    
+                    <p class="terms">By continuing, you agree to our <a href="#">Terms of Service</a> and <a href="#">Privacy Policy</a>.</p>
+                    
+                    <div style="text-align: center; margin: 30px 0 15px;">
+                        <a href="../index.chatbot.html" 
+                           style="
+                                display: inline-block; 
+                                background: transparent;
+                                color: #6c5ce7;
+                                text-decoration: none; 
+                                padding: 10px 24px; 
+                                border: 2px solid #6c5ce7;
+                                border-radius: 25px;
+                                font-size: 0.95rem; 
+                                font-weight: 500;
+                                transition: all 0.3s ease;
+                                position: relative;
+                                overflow: hidden;
+                                z-index: 1;
+                           " 
+                           onmouseover="
+                                this.style.color='white';
+                                this.style.borderColor='#6c5ce7';
+                                this.style.boxShadow='0 4px 12px rgba(108, 92, 231, 0.3)';
+                                this.innerHTML='Skip to Chatbot <i class=\'fas fa-arrow-right\' style=\'margin-left: 8px;\'></i>';
+                           " 
+                           onmouseout="
+                                this.style.color='#6c5ce7';
+                                this.style.borderColor='#6c5ce7';
+                                this.style.boxShadow='none';
+                                this.innerHTML='Skip to Chatbot';
+                           "
+                           onmousedown="this.style.transform='scale(0.98)'"
+                           onmouseup="this.style.transform='scale(1)'"
+                           
+                           class="skip-button"
+                        >
+                            Skip to Chatbot
+                        </a>
+                    </div>
+                    
+                    <style>
+                        .skip-button::before {
+                            content: '';
+                            position: absolute;
+                            top: 0;
+                            left: 0;
+                            width: 0;
+                            height: 100%;
+                            background: linear-gradient(135deg, #6c5ce7 0%, #a29bfe 100%);
+                            transition: width 0.3s ease;
+                            z-index: -1;
+                            border-radius: 20px;
+                        }
+                        .skip-button:hover::before {
+                            width: 100%;
+                        }
+                    </style>
+                </div>
+            </div>
+
+            <div class="trust-signals">
+                <div class="trust-badges">
+                    <img src="https://img.shields.io/badge/OAuth-2.0-brightgreen" alt="OAuth 2.0">
+                    <img src="https://img.shields.io/badge/GDPR-Compliant-blue" alt="GDPR Compliant">
+                    <img src="https://img.shields.io/badge/SOC2-Type_II-9cf" alt="SOC2 Type II">
+                </div>
+                
+                <div class="testimonial">
+                    <div class="testimonial-code">
+                        <pre><code>// "PrognosisAI's OAuth flow is as clean as its code suggestions."
+// - Senior Dev @ FAANG</code></pre>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="cli-section">
+                <h3 class="section-title">CLI Authentication</h3>
+                <div class="code-block">
+                    <div class="code-header">terminal</div>
+                    <pre><code class="language-bash"># Authenticate via CLI
+$ curl -X POST https://auth.prognosisai.com/oauth/token \
+  -H "Content-Type: application/json" \
+  -d '{"client_id": "your_client_id", "code": "authorization_code"}'
+
+# Set token as environment variable
+$ export PROGNOSIS_AI_TOKEN="your_token_here"
+
+# Verify authentication
+$ prognosis status
+✓ Authenticated as: your-username</code></pre>
+                </div>
+            </div>
+            
+            <div class="troubleshooting">
+                <h3 class="section-title">Troubleshooting</h3>
+                <div class="code-block error">
+                    <div class="code-header">error.log</div>
+                    <pre><code class="language-python">Traceback (auth error): Invalid scope.
+  File "/auth/oauth.py", line 42, in validate_scope
+    raise InvalidScopeError("Requested scope not available")
+Fix: Re-initiate OAuth with correct permissions.
+
+Common issues:
+- Missing 'read:user' scope for GitHub
+- Network connectivity issues
+- Expired authorization code</code></pre>
+                </div>
+                
+                <div class="docs-link">
+                    <i class="fas fa-book"></i>
+                    <a href="#" class="docs-button">View Authentication Documentation</a>
+                </div>
+            </div>
+        </main>
+        
+        <footer class="footer">
+            <div class="footer-links">
+                <a href="#">Documentation</a>
+                <a href="#">API Reference</a>
+                <a href="#">Support</a>
+                <a href="#">Status</a>
+                <a href="#">Security</a>
+            </div>
+            <div class="footer-copyright">
+                © 2023 PrognosisAI. All rights reserved.
+            </div>
+        </footer>
+    </div>
+    
+    <script src="/landing/js/terminal.js"></script>
+    <script src="/landing/js/auth.js"></script>
+</body>
+</html>

@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Authenticating...</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="../js/supabase-config.js"></script>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background: #f5f5f5;
+        }
+        .loader {
+            border: 5px solid #f3f3f3;
+            border-top: 5px solid #3b82f6;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="loader"></div>
+    <script>
+        // This script will be automatically called by Supabase after successful OAuth
+        // It will close the popup and redirect back to the main app
+        window.addEventListener('load', function() {
+            // This will automatically close the popup and handle the auth state
+            // in the parent window where the auth was initiated
+            window.opener.postMessage('authComplete', window.location.origin);
+            window.close();
+        });
+    </script>
+</body>
+</html>

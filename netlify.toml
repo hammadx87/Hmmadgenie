@@ -3,6 +3,12 @@
   functions = "netlify/functions"
   command = "cd netlify/functions && npm install"
 
+# Environment variables (you'll need to set these in your Netlify dashboard)
+[build.environment]
+  SUPABASE_URL = "your-supabase-url"
+  SUPABASE_ANON_KEY = "your-supabase-anon-key"
+  SUPABASE_REDIRECT_URL = "https://your-site-url.netlify.app"
+
 [dev]
   framework = "#static"
   port = 8888
@@ -16,10 +22,18 @@
   status = 200
   force = true
 
+# Handle SPA routing
 [[redirects]]
   from = "/*"
   to = "/index.html"
   status = 200
+
+# Handle auth callback
+[[redirects]]
+  from = "/auth/callback"
+  to = "/.netlify/functions/auth-callback"
+  status = 200
+  force = true
 
 [functions]
   node_bundler = "esbuild"
