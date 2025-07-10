@@ -2,12 +2,66 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>PrognosisAI | Developer Authentication</title>
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <link rel="stylesheet" href="/landing/css/styles.css">
     <style>
+        /* Base responsive styles */
+        html, body {
+            width: 100%;
+            overflow-x: hidden;
+            -webkit-text-size-adjust: 100%;
+            -ms-text-size-adjust: 100%;
+        }
+        
+        .container {
+            width: 100%;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 1rem;
+            box-sizing: border-box;
+        }
+        
+        @media (max-width: 768px) {
+            .container {
+                padding: 0 0.75rem;
+            }
+            
+            .auth-container {
+                margin: 1rem 0 !important;
+                padding: 1.5rem 1rem !important;
+                width: 100% !important;
+                max-width: 100% !important;
+                box-sizing: border-box !important;
+            }
+            
+            .section-title {
+                font-size: 1.25rem !important;
+                margin-bottom: 1rem !important;
+            }
+            
+            .oauth-button, .email-button, .email-input {
+                width: 100% !important;
+                box-sizing: border-box !important;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            .container {
+                padding: 0 0.5rem;
+            }
+            
+            .auth-container {
+                padding: 1.25rem 0.75rem !important;
+                margin: 0.5rem 0 !important;
+            }
+            
+            .section-title {
+                font-size: 1.1rem !important;
+            }
+        }
         .skip-button {
             display: inline-block;
             background: transparent;
@@ -87,25 +141,25 @@
                     </div>
                 </div>
 
-                <div class="auth-container">
-                    <h2 class="section-title">Select Your Development Environment</h2>
+                <div class="auth-container" style="background: rgba(255, 255, 255, 0.1); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); border-radius: 12px; padding: 2rem; margin: 2rem auto; max-width: 500px; width: 100%; box-sizing: border-box; position: relative; overflow: hidden;">
+                    <h2 class="section-title" style="color: #fff; margin-bottom: 1.5rem; font-size: 1.5rem; text-align: center;">Select Your Development Environment</h2>
                     
-                    <div class="oauth-providers">
-                        <button id="google-signin" class="oauth-button" style="background: #ffffff; color: #333; border: 1px solid #e0e0e0;" onclick="handleGoogleSignIn(event)">
+                    <div class="oauth-providers" style="display: flex; flex-direction: column; gap: 1rem;">
+                        <button id="google-signin" class="oauth-button" style="background: #ffffff; color: #333; border: 1px solid #e0e0e0; padding: 0.75rem 1.5rem; border-radius: 8px; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 1rem; transition: all 0.2s ease; width: 100%; box-sizing: border-box;" onclick="handleGoogleSignIn(event)">
                             <img src="https://www.google.com/favicon.ico" alt="Google" style="width: 20px; height: 20px; margin-right: 10px; vertical-align: middle;">
                             <span>Continue with Google</span>
                         </button>
                         
-                        <button class="oauth-button" style="background: #24292e; color: white;" disabled>
-                            <i class="fab fa-github"></i>
+                        <button class="oauth-button" style="background: #24292e; color: white; padding: 0.75rem 1.5rem; border-radius: 8px; border: none; cursor: not-allowed; display: flex; align-items: center; justify-content: center; font-size: 1rem; opacity: 0.7; width: 100%; box-sizing: border-box;" disabled>
+                            <i class="fab fa-github" style="margin-right: 10px;"></i>
                             <span>Continue with GitHub</span>
-                            <span class="provider-tag">Coming Soon</span>
+                            <span class="provider-tag" style="background: rgba(0,0,0,0.2); padding: 0.25rem 0.5rem; border-radius: 4px; font-size: 0.75rem; margin-left: 8px;">Coming Soon</span>
                         </button>
                         
-                        <button class="oauth-button" style="background: #000000; color: white;" disabled>
-                            <i class="fab fa-apple"></i>
+                        <button class="oauth-button" style="background: #000000; color: white; padding: 0.75rem 1.5rem; border-radius: 8px; border: none; cursor: not-allowed; display: flex; align-items: center; justify-content: center; font-size: 1rem; opacity: 0.7; width: 100%; box-sizing: border-box;" disabled>
+                            <i class="fab fa-apple" style="margin-right: 10px;"></i>
                             <span>Continue with Apple</span>
-                            <span class="provider-tag">Coming Soon</span>
+                            <span class="provider-tag" style="background: rgba(255,255,255,0.2); padding: 0.25rem 0.5rem; border-radius: 4px; font-size: 0.75rem; margin-left: 8px;">Coming Soon</span>
                         </button>
                     </div>
                     
@@ -141,55 +195,33 @@
                         });
                     </script>
                     
-                    <div class="divider">
-                        <span>OR</span>
+                    <div class="divider" style="display: flex; align-items: center; margin: 1.5rem 0; color: rgba(255,255,255,0.5);">
+                        <div style="flex: 1; height: 1px; background: rgba(255,255,255,0.1);"></div>
+                        <span style="padding: 0 1rem; font-size: 0.875rem;">OR</span>
+                        <div style="flex: 1; height: 1px; background: rgba(255,255,255,0.1);"></div>
                     </div>
                     
-                    <div class="email-auth" style="margin: 20px 0;">
-                        <input 
-                            type="email" 
-                            placeholder="email@company.com" 
-                            class="email-input"
-                            style="
-                                width: 100%;
-                                padding: 12px 16px;
-                                margin-bottom: 15px;
-                                border: 1px solid #e0e0e0;
-                                border-radius: 6px;
-                                font-size: 0.95rem;
-                                font-family: 'Inter', sans-serif;
-                                transition: border-color 0.2s;
-                            "
-                            onfocus="this.style.borderColor='#007bff'; this.style.outline='none'"
-                            onblur="this.style.borderColor='#e0e0e0'"
-                        >
+                    <div class="email-auth" style="margin: 1.5rem 0 0;">
+                        <div style="margin-bottom: 1rem;">
+                            <input 
+                                type="email" 
+                                placeholder="email@company.com" 
+                                class="email-input"
+                                style="width: 100%; padding: 0.75rem 1rem; border: 1px solid rgba(255,255,255,0.2); border-radius: 8px; font-size: 1rem; background: rgba(255,255,255,0.05); color: #fff; transition: border-color 0.2s, box-shadow 0.2s;"
+                                onfocus="this.style.borderColor='#3b82f6'; this.style.boxShadow='0 0 0 3px rgba(59, 130, 246, 0.2)';"
+                                onblur="this.style.borderColor='rgba(255,255,255,0.2)'; this.style.boxShadow='none';"
+                            >
+                        </div>
                         <button 
-                            class="email-button"
-                            style="
-                                width: 100%;
-                                padding: 12px 16px;
-                                background: linear-gradient(135deg, #6c5ce7 0%, #a29bfe 100%);
-                                color: white;
-                                border: none;
-                                border-radius: 8px;
-                                font-size: 0.95rem;
-                                font-weight: 500;
-                                cursor: pointer;
-                                transition: all 0.3s ease;
-                                display: flex;
-                                align-items: center;
-                                justify-content: center;
-                                gap: 10px;
-                                box-shadow: 0 4px 6px rgba(108, 92, 231, 0.2);
-                                position: relative;
-                                overflow: hidden;
-                            "
-                            onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 6px 12px rgba(108, 92, 231, 0.3)'"
-                            onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 4px 6px rgba(108, 92, 231, 0.2)'"
-                            onmousedown="this.style.transform='translateY(1px)'"
+                            class="email-button" 
+                            style="width: 100%; padding: 0.75rem 1.5rem; background: #3b82f6; color: white; border: none; border-radius: 8px; font-size: 1rem; font-weight: 500; cursor: pointer; transition: background-color 0.2s, transform 0.1s;"
+                            onmouseover="this.style.backgroundColor='#2563eb'"
+                            onmouseout="this.style.backgroundColor='#3b82f6'"
+                            onmousedown="this.style.transform='scale(0.98)'"
+                            onmouseup="this.style.transform='scale(1)'"
+                            onclick="alert('Email authentication coming soon! Please use Google Sign In for now.')"
                         >
-                            <i class="fas fa-envelope"></i>
-                            <span>Continue with Email</span>
+                            Continue with Email
                         </button>
                     </div>
                     

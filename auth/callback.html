@@ -2,44 +2,135 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Authenticating...</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="../js/supabase-config.js"></script>
     <style>
+        :root {
+            --primary-color: #3b82f6;
+            --bg-color: #f8fafc;
+            --text-color: #1e293b;
+        }
+        
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
             display: flex;
             justify-content: center;
             align-items: center;
-            height: 100vh;
+            min-height: 100vh;
             margin: 0;
-            background: #f5f5f5;
+            padding: 20px;
+            background: var(--bg-color);
+            color: var(--text-color);
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
         }
+        
+        .auth-container {
+            text-align: center;
+            width: 100%;
+            max-width: 400px;
+            padding: 2rem;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        }
+        
         .loader {
-            border: 5px solid #f3f3f3;
-            border-top: 5px solid #3b82f6;
+            border: 4px solid rgba(59, 130, 246, 0.1);
+            border-top: 4px solid var(--primary-color);
             border-radius: 50%;
             width: 50px;
             height: 50px;
+            margin: 0 auto 1.5rem;
             animation: spin 1s linear infinite;
         }
+        
+        .status-text {
+            font-size: 1.125rem;
+            font-weight: 500;
+            color: var(--text-color);
+            margin-bottom: 1.5rem;
+        }
+        
+        @media (max-width: 480px) {
+            .auth-container {
+                padding: 1.5rem;
+                margin: 0 1rem;
+            }
+            
+            .loader {
+                width: 40px;
+                height: 40px;
+            }
+            
+            .status-text {
+                font-size: 1rem;
+            }
+        }
+        
         @keyframes spin {
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
         }
+        
+        /* Add a subtle pulse animation for better UX */
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.6; }
+        }
     </style>
 </head>
 <body>
-    <div class="loader"></div>
+    <div class="auth-container">
+        <div class="loader"></div>
+        <p class="status-text">Completing authentication...</p>
+        <p style="color: #64748b; font-size: 0.875rem;">Please wait while we log you in.</p>
+    </div>
+    
     <script>
-        // This script will be automatically called by Supabase after successful OAuth
-        // It will close the popup and redirect back to the main app
-        window.addEventListener('load', function() {
-            // This will automatically close the popup and handle the auth state
-            // in the parent window where the auth was initiated
-            window.opener.postMessage('authComplete', window.location.origin);
-            window.close();
+        document.addEventListener('DOMContentLoaded', function() {
+            // Show a more user-friendly message if the window doesn't close automatically
+            setTimeout(function() {
+                const statusText = document.querySelector('.status-text');
+                if (statusText) {
+                    statusText.textContent = 'Almost there...';
+                }
+            }, 3000);
+            
+            // Handle the OAuth callback
+            try {
+                // This script will be automatically called by Supabase after successful OAuth
+                window.addEventListener('load', function() {
+                    // Send message to parent window and close the popup
+                    if (window.opener) {
+                        window.opener.postMessage('authComplete', window.location.origin);
+                        window.close();
+                    } else {
+                        // Fallback in case opener is not available
+                        window.location.href = '/';
+                    }
+                });
+            } catch (error) {
+                console.error('Authentication error:', error);
+                const statusText = document.querySelector('.status-text');
+                if (statusText) {
+                    statusText.textContent = 'Authentication completed!';
+                    statusText.style.color = '#10b981';
+                }
+                
+                // Redirect after a short delay
+                setTimeout(function() {
+                    window.location.href = '/';
+                }, 1500);
+            }
         });
     </script>
 </body>
